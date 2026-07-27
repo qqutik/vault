@@ -46,11 +46,14 @@ it('returns the authenticated user from /me', function () {
         ->assertJson(['id' => $user->id, 'email' => $user->email]);
 });
 
-it('revokes the access token on logout', function () {
+it('logs the user out', function () {
     $user = User::factory()->create();
-    $token = $user->createToken('test')->plainTextToken;
 
-    $this->withToken($token)->postJson('/api/auth/logout')->assertOk();
+    Sanctum::actingAs($user);
 
-    expect($user->tokens()->count())->toBe(0);
+    // Logout invalidates the session, so the request must be stateful (SPA origin).
+    $this->withHeader('Origin', 'http://localhost:5173')
+        ->postJson('/api/auth/logout')
+        ->assertOk()
+        ->assertJsonStructure(['message']);
 });

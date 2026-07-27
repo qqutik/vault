@@ -27,11 +27,11 @@ Route::get('/health', fn (): JsonResponse => response()->json([
 /*
 | Passkey (WebAuthn) authentication — passwordless.
 |
-| These run in the `webauthn` middleware group (session-backed) because the
-| WebAuthn challenge is stored in the session between the options and verify
-| steps. Everything else in the API stays stateless (Bearer token).
+| Session-backed via Sanctum's stateful API (see bootstrap/app.php): the
+| WebAuthn challenge and the resulting login both live in the session, which
+| the SPA carries in an httpOnly cookie.
 */
-Route::prefix('auth')->middleware('webauthn')->group(function (): void {
+Route::prefix('auth')->group(function (): void {
     Route::post('register/options', [RegisterController::class, 'options']);
     Route::post('register/verify', [RegisterController::class, 'verify'])
         ->middleware('webauthn.pending');

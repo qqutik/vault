@@ -7,6 +7,12 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
+// The passkey ceremony is session-backed, so the requests must look like they
+// come from the stateful SPA origin (Sanctum enables the session then).
+beforeEach(function () {
+    $this->withHeader('Origin', 'http://localhost:5173');
+});
+
 it('requires a name and email for registration options', function () {
     $this->postJson('/api/auth/register/options', [])
         ->assertStatus(422)

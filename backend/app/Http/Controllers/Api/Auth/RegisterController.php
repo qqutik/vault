@@ -12,6 +12,7 @@ use App\Models\User;
 use App\Services\Auth\PasskeyRegistrationService;
 use Illuminate\Contracts\Support\Responsable;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Auth;
 use Laragear\WebAuthn\Http\Requests\AttestedRequest;
 
 class RegisterController extends Controller
@@ -35,7 +36,8 @@ class RegisterController extends Controller
     }
 
     /**
-     * Step 2 — store the attested passkey, then return the token + recovery codes.
+     * Step 2 — store the attested passkey, sign the user in (session), and
+     * return the one-time recovery codes.
      *
      * The pending user is set on the guard by the `webauthn.pending` middleware.
      */
@@ -46,14 +48,15 @@ class RegisterController extends Controller
         /** @var User $user */
         $user = $request->user();
 
-        $result = $this->registration->complete($user);
+        $recoveryCodes = $this->registration->complete($user);
 
+        Auth::guard('web')->login($user);
+        $request->session()->regenerate();
         $request->session()->forget('webauthn.register_user_id');
 
         return response()->json([
             'user' => new UserResource($user),
-            'token' => $result['token'],
-            'recovery_codes' => $result['recovery_codes'],
+            'recovery_codes' => $recoveryCodes,
         ], 201);
     }
 }

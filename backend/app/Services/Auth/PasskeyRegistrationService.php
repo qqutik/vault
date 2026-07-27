@@ -22,7 +22,6 @@ class PasskeyRegistrationService
         private readonly Container $container,
         private readonly UserRepository $users,
         private readonly RecoveryCodeService $recoveryCodes,
-        private readonly AccessTokenService $tokens,
     ) {}
 
     /**
@@ -56,16 +55,13 @@ class PasskeyRegistrationService
     }
 
     /**
-     * Finalize a registration once the passkey has been stored: issue recovery
-     * codes and an access token.
+     * Finalize a registration once the passkey has been stored: issue the
+     * one-time recovery codes.
      *
-     * @return array{token: string, recovery_codes: list<string>}
+     * @return list<string>
      */
     public function complete(User $user): array
     {
-        return [
-            'token' => $this->tokens->issue($user),
-            'recovery_codes' => $this->recoveryCodes->generateFor($user),
-        ];
+        return $this->recoveryCodes->generateFor($user);
     }
 }

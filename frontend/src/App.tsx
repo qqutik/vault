@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { fetchDashboard, logout, type Dashboard } from './api/client';
 import { loginWithPasskey, registerPasskey } from './auth/passkey';
 import './App.css';
@@ -20,8 +20,17 @@ export default function App() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const [checking, setChecking] = useState(true);
   const [dashboard, setDashboard] = useState<Dashboard | null>(null);
   const [recoveryCodes, setRecoveryCodes] = useState<string[] | null>(null);
+
+  // On load, restore an existing session (httpOnly cookie survives reloads).
+  useEffect(() => {
+    fetchDashboard()
+      .then(setDashboard)
+      .catch(() => undefined)
+      .finally(() => setChecking(false));
+  }, []);
 
   async function handleRegister(e: React.FormEvent) {
     e.preventDefault();
@@ -58,6 +67,15 @@ export default function App() {
     setRecoveryCodes(null);
     setName('');
     setEmail('');
+  }
+
+  if (checking) {
+    return (
+      <main className="card">
+        <h1>🔐 Vault</h1>
+        <p className="muted">Loading…</p>
+      </main>
+    );
   }
 
   if (dashboard) {

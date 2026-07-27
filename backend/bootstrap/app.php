@@ -1,13 +1,10 @@
 <?php
 
 use App\Http\Middleware\SetPendingWebAuthnUser;
-use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
-use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
-use Illuminate\Session\Middleware\StartSession;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -17,14 +14,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        // Stateful group for the passkey ceremony only: the WebAuthn challenge
-        // is stored in the session between the options and verify requests.
-        // No CSRF here — the SPA authenticates the follow-up API with a token.
-        $middleware->group('webauthn', [
-            EncryptCookies::class,
-            AddQueuedCookiesToResponse::class,
-            StartSession::class,
-        ]);
+        // Sanctum SPA: requests from the stateful frontend get session + CSRF,
+        // so auth lives in an httpOnly cookie (no Bearer token in JS). This also
+        // backs the passkey ceremony, whose challenge is kept in the session.
+        $middleware->statefulApi();
 
         $middleware->alias([
             'webauthn.pending' => SetPendingWebAuthnUser::class,
