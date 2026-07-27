@@ -168,17 +168,44 @@ button.secondary {
 
 .folder-add {
   flex-direction: row;
+  flex-wrap: wrap;
   gap: 0.5rem;
   margin-bottom: 0.75rem;
 }
 
 .folder-add input {
+  flex: 1 1 100%;
+}
+
+.folder-add select {
   flex: 1;
 }
 
 .folder-add button {
   width: auto;
   padding: 0.65rem 1rem;
+}
+
+select {
+  padding: 0.6rem 0.7rem;
+  border-radius: 10px;
+  border: 1px solid #2a303c;
+  background: #0f1115;
+  color: #e7e9ee;
+  font-size: 0.95rem;
+}
+
+select:focus {
+  outline: none;
+  border-color: #5b7cfa;
+}
+
+.folder-edit {
+  flex-wrap: wrap;
+}
+
+.folder-edit select {
+  flex: 1;
 }
 
 .folder-items {

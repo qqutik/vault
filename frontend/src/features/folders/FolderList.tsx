@@ -12,11 +12,35 @@ interface Props {
   onChange?: () => void;
 }
 
+type FolderNode = Folder & { depth: number };
+
+/** Flatten folders into display order (parents before children) with a depth. */
+function orderByTree(folders: Folder[]): FolderNode[] {
+  const byParent = new Map<number | null, Folder[]>();
+  for (const folder of folders) {
+    const list = byParent.get(folder.parent_id) ?? [];
+    list.push(folder);
+    byParent.set(folder.parent_id, list);
+  }
+
+  const result: FolderNode[] = [];
+  const walk = (parentId: number | null, depth: number) => {
+    for (const folder of byParent.get(parentId) ?? []) {
+      result.push({ ...folder, depth });
+      walk(folder.id, depth + 1);
+    }
+  };
+  walk(null, 0);
+  return result;
+}
+
 export default function FolderList({ onChange }: Props) {
   const [folders, setFolders] = useState<Folder[]>([]);
   const [newName, setNewName] = useState('');
+  const [newParentId, setNewParentId] = useState<number | null>(null);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editName, setEditName] = useState('');
+  const [editParentId, setEditParentId] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -35,8 +59,11 @@ export default function FolderList({ onChange }: Props) {
       await action();
       await load();
       onChange?.();
-    } catch {
-      setError('Something went wrong.');
+    } catch (err) {
+      const parentError =
+        (err as { response?: { data?: { errors?: { parent_id?: string[] } } } })
+          .response?.data?.errors?.parent_id?.[0];
+      setError(parentError ?? 'Something went wrong.');
     } finally {
       setBusy(false);
     }
@@ -46,12 +73,16 @@ export default function FolderList({ onChange }: Props) {
     e.preventDefault();
     const name = newName.trim();
     if (!name) return;
-    run(() => createFolder(name)).then(() => setNewName(''));
+    run(() => createFolder(name, newParentId)).then(() => {
+      setNewName('');
+      setNewParentId(null);
+    });
   }
 
   function startEdit(folder: Folder) {
     setEditingId(folder.id);
     setEditName(folder.name);
+    setEditParentId(folder.parent_id);
   }
 
   function handleRename(e: React.FormEvent) {
@@ -59,13 +90,28 @@ export default function FolderList({ onChange }: Props) {
     const name = editName.trim();
     if (!name || editingId === null) return;
     const id = editingId;
-    run(() => updateFolder(id, name)).then(() => setEditingId(null));
+    run(() => updateFolder(id, name, editParentId)).then(() => setEditingId(null));
   }
 
   function handleDelete(folder: Folder) {
-    if (!confirm(`Delete folder “${folder.name}”?`)) return;
+    if (!confirm(`Delete folder “${folder.name}”? Subfolders are deleted too.`)) return;
     run(() => deleteFolder(folder.id));
   }
+
+  const tree = orderByTree(folders);
+
+  const parentOptions = (excludeId?: number) => (
+    <>
+      <option value="">— No parent (root) —</option>
+      {folders
+        .filter((f) => f.id !== excludeId)
+        .map((f) => (
+          <option key={f.id} value={f.id}>
+            {f.name}
+          </option>
+        ))}
+    </>
+  );
 
   return (
     <section className="folders">
@@ -77,17 +123,23 @@ export default function FolderList({ onChange }: Props) {
           onChange={(e) => setNewName(e.target.value)}
           placeholder="New folder name"
         />
+        <select
+          value={newParentId ?? ''}
+          onChange={(e) => setNewParentId(e.target.value ? Number(e.target.value) : null)}
+        >
+          {parentOptions()}
+        </select>
         <button type="submit" disabled={busy || !newName.trim()}>
           Add
         </button>
       </form>
 
-      {folders.length === 0 ? (
+      {tree.length === 0 ? (
         <p className="muted">No folders yet.</p>
       ) : (
         <ul className="folder-items">
-          {folders.map((folder) => (
-            <li key={folder.id}>
+          {tree.map((folder) => (
+            <li key={folder.id} style={{ marginLeft: `${folder.depth * 18}px` }}>
               {editingId === folder.id ? (
                 <form className="folder-edit" onSubmit={handleRename}>
                   <input
@@ -95,6 +147,14 @@ export default function FolderList({ onChange }: Props) {
                     onChange={(e) => setEditName(e.target.value)}
                     autoFocus
                   />
+                  <select
+                    value={editParentId ?? ''}
+                    onChange={(e) =>
+                      setEditParentId(e.target.value ? Number(e.target.value) : null)
+                    }
+                  >
+                    {parentOptions(folder.id)}
+                  </select>
                   <button type="submit" disabled={busy}>
                     Save
                   </button>
@@ -107,7 +167,7 @@ export default function FolderList({ onChange }: Props) {
                   <span className="folder-name">📁 {folder.name}</span>
                   <span className="folder-actions">
                     <button className="link" onClick={() => startEdit(folder)}>
-                      Rename
+                      Rename / Move
                     </button>
                     <button className="link danger" onClick={() => handleDelete(folder)}>
                       Delete

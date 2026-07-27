@@ -69,15 +69,22 @@ export async function fetchFolders(): Promise<Folder[]> {
   return data;
 }
 
-export async function createFolder(name: string): Promise<Folder> {
+export async function createFolder(
+  name: string,
+  parentId: number | null = null,
+): Promise<Folder> {
   await ensureCsrf();
-  const { data } = await api.post<Folder>('/folders', { name });
+  const { data } = await api.post<Folder>('/folders', { name, parent_id: parentId });
   return data;
 }
 
-export async function updateFolder(id: number, name: string): Promise<Folder> {
+export async function updateFolder(
+  id: number,
+  name: string,
+  parentId: number | null = null,
+): Promise<Folder> {
   await ensureCsrf();
-  const { data } = await api.put<Folder>(`/folders/${id}`, { name });
+  const { data } = await api.put<Folder>(`/folders/${id}`, { name, parent_id: parentId });
   return data;
 }
 
