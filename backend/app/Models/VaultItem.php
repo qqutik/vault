@@ -1,25 +1,21 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
 use App\Enums\VaultItemType;
 use Database\Factories\VaultItemFactory;
+use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+#[Fillable(['folder_id', 'type', 'title', 'data', 'favorite'])]
 class VaultItem extends Model
 {
     /** @use HasFactory<VaultItemFactory> */
     use HasFactory;
-
-    protected $fillable = [
-        'folder_id',
-        'type',
-        'title',
-        'data',
-        'favorite',
-    ];
 
     /**
      * @return array<string, string>
