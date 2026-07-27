@@ -1,0 +1,18 @@
+# OS / editors
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Backend (Laravel) — most ignores live in backend/.gitignore; these are safety nets
+/backend/vendor/
+/backend/node_modules/
+/backend/.env
+/backend/.env.backup
+/backend/.phpunit.result.cache
+/backend/storage/*.key
+
+# Frontend (React/Vite)
+/frontend/node_modules/
+/frontend/dist/
+/frontend/.env.local
