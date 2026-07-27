@@ -1,122 +1,146 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import { useState } from 'react';
+import { fetchDashboard, logout, type Dashboard } from './api/client';
+import { loginWithPasskey, registerPasskey } from './auth/passkey';
+import './App.css';
 
-function App() {
-  const [count, setCount] = useState(0)
+type Mode = 'login' | 'register';
 
-  return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
-
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+function errorMessage(err: unknown): string {
+  if (typeof err === 'object' && err !== null) {
+    const anyErr = err as { response?: { data?: { message?: string } }; message?: string };
+    return anyErr.response?.data?.message ?? anyErr.message ?? 'Something went wrong.';
+  }
+  return 'Something went wrong.';
 }
 
-export default App
+export default function App() {
+  const [mode, setMode] = useState<Mode>('register');
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const [dashboard, setDashboard] = useState<Dashboard | null>(null);
+  const [recoveryCodes, setRecoveryCodes] = useState<string[] | null>(null);
+
+  async function handleRegister(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    setError(null);
+    try {
+      const result = await registerPasskey(name, email);
+      setRecoveryCodes(result.recoveryCodes);
+      setDashboard(await fetchDashboard());
+    } catch (err) {
+      setError(errorMessage(err));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleLogin(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    setError(null);
+    try {
+      await loginWithPasskey(email || undefined);
+      setDashboard(await fetchDashboard());
+    } catch (err) {
+      setError(errorMessage(err));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleLogout() {
+    await logout();
+    setDashboard(null);
+    setRecoveryCodes(null);
+    setName('');
+    setEmail('');
+  }
+
+  if (dashboard) {
+    return (
+      <main className="card">
+        <h1>🔐 Vault</h1>
+        <p className="muted">Signed in as {dashboard.user.name}</p>
+
+        {recoveryCodes && (
+          <div className="recovery">
+            <h2>Save your recovery codes</h2>
+            <p className="muted">Shown once. Store them somewhere safe.</p>
+            <ul>
+              {recoveryCodes.map((code) => (
+                <li key={code}>{code}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        <div className="stats">
+          <Stat label="Folders" value={dashboard.stats.folders} />
+          <Stat label="Items" value={dashboard.stats.vault_items} />
+          <Stat label="Passkeys" value={dashboard.stats.passkeys} />
+          <Stat label="Favorites" value={dashboard.stats.favorites} />
+        </div>
+
+        <button className="secondary" onClick={handleLogout}>
+          Log out
+        </button>
+      </main>
+    );
+  }
+
+  return (
+    <main className="card">
+      <h1>🔐 Vault</h1>
+
+      <div className="tabs">
+        <button className={mode === 'register' ? 'active' : ''} onClick={() => setMode('register')}>
+          Register
+        </button>
+        <button className={mode === 'login' ? 'active' : ''} onClick={() => setMode('login')}>
+          Log in
+        </button>
+      </div>
+
+      {mode === 'register' ? (
+        <form onSubmit={handleRegister}>
+          <label>
+            Name
+            <input value={name} onChange={(e) => setName(e.target.value)} required />
+          </label>
+          <label>
+            Email
+            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+          </label>
+          <button type="submit" disabled={busy}>
+            {busy ? 'Waiting for passkey…' : 'Create passkey'}
+          </button>
+        </form>
+      ) : (
+        <form onSubmit={handleLogin}>
+          <label>
+            Email <span className="muted">(optional)</span>
+            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+          </label>
+          <button type="submit" disabled={busy}>
+            {busy ? 'Waiting for passkey…' : 'Log in with passkey'}
+          </button>
+        </form>
+      )}
+
+      {error && <p className="error">{error}</p>}
+    </main>
+  );
+}
+
+function Stat({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="stat">
+      <span className="stat-value">{value}</span>
+      <span className="stat-label">{label}</span>
+    </div>
+  );
+}

@@ -1,5 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
+use App\Http\Controllers\Api\Auth\LoginController;
+use App\Http\Controllers\Api\Auth\RegisterController;
+use App\Http\Controllers\Api\DashboardController;
+use App\Http\Resources\UserResource;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -19,27 +25,24 @@ Route::get('/health', fn (): JsonResponse => response()->json([
 ]));
 
 /*
-| Public — Passkey (WebAuthn) authentication. [Phase 2 — to implement]
+| Passkey (WebAuthn) authentication — passwordless.
 |
-| Passwordless flow adapted for token-based auth:
-|   POST /auth/register/options   → attestation challenge (creates user)
-|   POST /auth/register/verify    → store passkey, return recovery codes + token
-|   POST /auth/login/options      → assertion challenge
-|   POST /auth/login/verify       → verify assertion, return Sanctum token
-|   POST /auth/recovery/verify    → recovery-code login → register a new passkey
-|
-| Ready-made reference controllers live in app/Http/Controllers/WebAuthn
-| (laragear stubs). They default to session login and to registering a
-| passkey for an already-authenticated user, so they still need adapting to
-| passwordless signup + token issuance before wiring up.
+| These run in the `webauthn` middleware group (session-backed) because the
+| WebAuthn challenge is stored in the session between the options and verify
+| steps. Everything else in the API stays stateless (Bearer token).
 */
+Route::prefix('auth')->middleware('webauthn')->group(function (): void {
+    Route::post('register/options', [RegisterController::class, 'options']);
+    Route::post('register/verify', [RegisterController::class, 'verify'])
+        ->middleware('webauthn.pending');
+
+    Route::post('login/options', [LoginController::class, 'options']);
+    Route::post('login/verify', [LoginController::class, 'verify']);
+});
 
 // Authenticated (Bearer token via Sanctum).
-Route::middleware('auth:sanctum')->group(function () {
-    Route::get('/me', fn (Request $request) => $request->user());
-
-    // Phase 3+ — passkeys management, folders, vault items:
-    //   Route::apiResource('folders', FolderController::class);
-    //   Route::apiResource('vault-items', VaultItemController::class);
-    //   Route::get('passkeys', [PasskeyController::class, 'index']);
+Route::middleware('auth:sanctum')->group(function (): void {
+    Route::get('/me', fn (Request $request) => new UserResource($request->user()));
+    Route::post('/auth/logout', [LoginController::class, 'logout']);
+    Route::get('/dashboard', [DashboardController::class, 'index']);
 });

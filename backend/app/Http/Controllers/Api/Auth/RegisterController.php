@@ -1,0 +1,59 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Http\Controllers\Api\Auth;
+
+use App\DTO\RegisterUserData;
+use App\Http\Controllers\Controller;
+use App\Http\Requests\Auth\RegisterOptionsRequest;
+use App\Http\Resources\UserResource;
+use App\Models\User;
+use App\Services\Auth\PasskeyRegistrationService;
+use Illuminate\Contracts\Support\Responsable;
+use Illuminate\Http\JsonResponse;
+use Laragear\WebAuthn\Http\Requests\AttestedRequest;
+
+class RegisterController extends Controller
+{
+    public function __construct(
+        private readonly PasskeyRegistrationService $registration,
+    ) {}
+
+    /**
+     * Step 1 — create the pending user and return passkey (attestation) options.
+     */
+    public function options(RegisterOptionsRequest $request): Responsable
+    {
+        $result = $this->registration->createOptions(
+            RegisterUserData::fromArray($request->validated()),
+        );
+
+        $request->session()->put('webauthn.register_user_id', $result->user->getKey());
+
+        return $result->options;
+    }
+
+    /**
+     * Step 2 — store the attested passkey, then return the token + recovery codes.
+     *
+     * The pending user is set on the guard by the `webauthn.pending` middleware.
+     */
+    public function verify(AttestedRequest $request): JsonResponse
+    {
+        $request->save();
+
+        /** @var User $user */
+        $user = $request->user();
+
+        $result = $this->registration->complete($user);
+
+        $request->session()->forget('webauthn.register_user_id');
+
+        return response()->json([
+            'user' => new UserResource($user),
+            'token' => $result['token'],
+            'recovery_codes' => $result['recovery_codes'],
+        ], 201);
+    }
+}

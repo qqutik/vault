@@ -62,8 +62,10 @@ return [
     */
 
     'providers' => [
+        // eloquent-webauthn (laragear) validates passkey assertions during login
+        // and still supports classic credential checks for non-WebAuthn guards.
         'users' => [
-            'driver' => 'eloquent',
+            'driver' => 'eloquent-webauthn',
             'model' => env('AUTH_MODEL', User::class),
         ],
 

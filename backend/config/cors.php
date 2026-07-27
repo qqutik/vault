@@ -27,8 +27,9 @@ return [
 
     'max_age' => 0,
 
-    // Token-based auth (Bearer) does not need cookies. Flip to true only if
-    // you later switch to Sanctum's stateful SPA (cookie) mode.
-    'supports_credentials' => false,
+    // The passkey ceremony (register/login options→verify) uses a short-lived
+    // session cookie to carry the WebAuthn challenge, so the SPA must send
+    // credentials on those calls. The rest of the API stays Bearer-token based.
+    'supports_credentials' => true,
 
 ];
