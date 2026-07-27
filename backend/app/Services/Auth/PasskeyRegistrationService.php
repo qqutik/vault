@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Services\Auth;
 
-use App\DTO\RegisterUserData;
-use App\DTO\RegistrationOptions;
+use App\DTO\RegisterUserDTO;
+use App\DTO\RegistrationOptionsDTO;
 use App\Models\User;
 use App\Repositories\UserRepository;
 use Illuminate\Contracts\Container\Container;
@@ -29,9 +29,9 @@ class PasskeyRegistrationService
      *
      * @throws ValidationException when the e-mail already owns a passkey.
      */
-    public function createOptions(RegisterUserData $data): RegistrationOptions
+    public function createOptions(RegisterUserDTO $dto): RegistrationOptionsDTO
     {
-        $existing = $this->users->findByEmail($data->email);
+        $existing = $this->users->findByEmail($dto->getEmail());
 
         if ($existing !== null && $existing->webAuthnCredentials()->exists()) {
             throw ValidationException::withMessages([
@@ -39,7 +39,7 @@ class PasskeyRegistrationService
             ]);
         }
 
-        $user = $this->users->firstOrCreateForRegistration($data);
+        $user = $this->users->firstOrCreateForRegistration($dto);
 
         $creation = new AttestationCreation(
             user: $user,
@@ -51,7 +51,7 @@ class PasskeyRegistrationService
             ->send($creation)
             ->then(static fn (AttestationCreation $creation): Responsable => $creation->json);
 
-        return new RegistrationOptions($user, $options);
+        return new RegistrationOptionsDTO($user, $options);
     }
 
     /**

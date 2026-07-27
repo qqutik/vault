@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Repositories;
 
-use App\DTO\RegisterUserData;
+use App\DTO\RegisterUserDTO;
 use App\Models\User;
 
 class UserRepository
@@ -21,19 +21,19 @@ class UserRepository
      * creates a fresh one otherwise. Callers must reject e-mails that already
      * own a credential before calling this (see PasskeyRegistrationService).
      */
-    public function firstOrCreateForRegistration(RegisterUserData $data): User
+    public function firstOrCreateForRegistration(RegisterUserDTO $dto): User
     {
-        $user = $this->findByEmail($data->email);
+        $user = $this->findByEmail($dto->getEmail());
 
         if ($user !== null) {
-            $user->update(['name' => $data->name]);
+            $user->update(['name' => $dto->getName()]);
 
             return $user;
         }
 
         return User::query()->create([
-            'name' => $data->name,
-            'email' => $data->email,
+            'name' => $dto->getName(),
+            'email' => $dto->getEmail(),
         ]);
     }
 }

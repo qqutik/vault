@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
-use App\DTO\FolderData;
+use App\DTO\FolderDTO;
 use App\Models\Folder;
 use App\Models\User;
 use App\Repositories\FolderRepository;
@@ -25,19 +25,19 @@ class FolderService
         return $this->folders->forUser($user);
     }
 
-    public function create(User $user, FolderData $data): Folder
+    public function create(User $user, FolderDTO $dto): Folder
     {
-        return $this->folders->create($user, $data);
+        return $this->folders->create($user, $dto);
     }
 
     /**
      * @throws ValidationException when the move would create a cycle.
      */
-    public function update(Folder $folder, FolderData $data): Folder
+    public function update(Folder $folder, FolderDTO $dto): Folder
     {
-        $this->guardAgainstCycle($folder, $data->parentId);
+        $this->guardAgainstCycle($folder, $dto->getParentId());
 
-        return $this->folders->update($folder, $data);
+        return $this->folders->update($folder, $dto);
     }
 
     public function delete(Folder $folder): void

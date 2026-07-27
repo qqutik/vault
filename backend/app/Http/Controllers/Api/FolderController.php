@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api;
 
-use App\DTO\FolderData;
+use App\DTO\FolderDTO;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Folder\StoreFolderRequest;
 use App\Http\Requests\Folder\UpdateFolderRequest;
@@ -39,7 +39,7 @@ class FolderController extends Controller
         /** @var User $user */
         $user = $request->user();
 
-        $folder = $this->folders->create($user, FolderData::fromArray($request->validated()));
+        $folder = $this->folders->create($user, FolderDTO::fromArray($request->validated()));
 
         return new FolderResource($folder);
     }
@@ -55,7 +55,7 @@ class FolderController extends Controller
     {
         $this->authorize('update', $folder);
 
-        $folder = $this->folders->update($folder, FolderData::fromArray($request->validated()));
+        $folder = $this->folders->update($folder, FolderDTO::fromArray($request->validated()));
 
         return new FolderResource($folder);
     }

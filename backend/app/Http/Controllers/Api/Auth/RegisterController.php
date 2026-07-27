@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\Auth;
 
-use App\DTO\RegisterUserData;
+use App\DTO\RegisterUserDTO;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\RegisterOptionsRequest;
 use App\Http\Resources\UserResource;
@@ -27,12 +27,12 @@ class RegisterController extends Controller
     public function options(RegisterOptionsRequest $request): Responsable
     {
         $result = $this->registration->createOptions(
-            RegisterUserData::fromArray($request->validated()),
+            RegisterUserDTO::fromArray($request->validated()),
         );
 
-        $request->session()->put('webauthn.register_user_id', $result->user->getKey());
+        $request->session()->put('webauthn.register_user_id', $result->getUser()->getKey());
 
-        return $result->options;
+        return $result->getOptions();
     }
 
     /**

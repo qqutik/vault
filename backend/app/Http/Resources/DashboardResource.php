@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Http\Resources;
 
-use App\DTO\DashboardData;
+use App\DTO\DashboardDTO;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
- * @mixin DashboardData
+ * @mixin DashboardDTO
  */
 class DashboardResource extends JsonResource
 {
@@ -18,16 +18,16 @@ class DashboardResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        /** @var DashboardData $data */
-        $data = $this->resource;
+        /** @var DashboardDTO $dto */
+        $dto = $this->resource;
 
         return [
-            'user' => new UserResource($data->user),
+            'user' => new UserResource($dto->getUser()),
             'stats' => [
-                'folders' => $data->foldersCount,
-                'vault_items' => $data->vaultItemsCount,
-                'passkeys' => $data->passkeysCount,
-                'favorites' => $data->favoritesCount,
+                'folders' => $dto->getFoldersCount(),
+                'vault_items' => $dto->getVaultItemsCount(),
+                'passkeys' => $dto->getPasskeysCount(),
+                'favorites' => $dto->getFavoritesCount(),
             ],
         ];
     }

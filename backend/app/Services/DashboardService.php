@@ -4,14 +4,17 @@ declare(strict_types=1);
 
 namespace App\Services;
 
-use App\DTO\DashboardData;
+use App\DTO\DashboardDTO;
 use App\Models\User;
 
 class DashboardService
 {
-    public function forUser(User $user): DashboardData
+    /**
+     * Build the dashboard summary (owner + counts) for a user.
+     */
+    public function forUser(User $user): DashboardDTO
     {
-        return new DashboardData(
+        return new DashboardDTO(
             user: $user,
             foldersCount: $user->folders()->count(),
             vaultItemsCount: $user->vaultItems()->count(),
