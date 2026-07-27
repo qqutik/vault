@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { fetchDashboard, logout, type Dashboard } from './api/client';
 import { loginWithPasskey, registerPasskey } from './auth/passkey';
+import FolderList from './features/folders/FolderList';
 import './App.css';
 
 type Mode = 'login' | 'register';
@@ -102,6 +103,8 @@ export default function App() {
           <Stat label="Passkeys" value={dashboard.stats.passkeys} />
           <Stat label="Favorites" value={dashboard.stats.favorites} />
         </div>
+
+        <FolderList onChange={() => fetchDashboard().then(setDashboard)} />
 
         <button className="secondary" onClick={handleLogout}>
           Log out

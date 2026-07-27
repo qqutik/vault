@@ -55,3 +55,33 @@ export async function logout(): Promise<void> {
   await ensureCsrf();
   await api.post('/auth/logout');
 }
+
+export interface Folder {
+  id: number;
+  name: string;
+  parent_id: number | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export async function fetchFolders(): Promise<Folder[]> {
+  const { data } = await api.get<Folder[]>('/folders');
+  return data;
+}
+
+export async function createFolder(name: string): Promise<Folder> {
+  await ensureCsrf();
+  const { data } = await api.post<Folder>('/folders', { name });
+  return data;
+}
+
+export async function updateFolder(id: number, name: string): Promise<Folder> {
+  await ensureCsrf();
+  const { data } = await api.put<Folder>(`/folders/${id}`, { name });
+  return data;
+}
+
+export async function deleteFolder(id: number): Promise<void> {
+  await ensureCsrf();
+  await api.delete(`/folders/${id}`);
+}
