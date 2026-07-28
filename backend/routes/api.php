@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\Api\AuditLogController;
 use App\Http\Controllers\Api\Auth\LoginController;
 use App\Http\Controllers\Api\Auth\RegisterController;
 use App\Http\Controllers\Api\DashboardController;
@@ -50,4 +51,6 @@ Route::middleware('auth:sanctum')->group(function (): void {
 
     Route::apiResource('folders', FolderController::class);
     Route::apiResource('vault-items', VaultItemController::class);
+
+    Route::get('/audit-logs', [AuditLogController::class, 'index']);
 });

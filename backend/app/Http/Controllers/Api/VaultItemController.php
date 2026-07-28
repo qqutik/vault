@@ -5,12 +5,14 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api;
 
 use App\DTO\VaultItemDTO;
+use App\Enums\AuditAction;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\VaultItem\StoreVaultItemRequest;
 use App\Http\Requests\VaultItem\UpdateVaultItemRequest;
 use App\Http\Resources\VaultItemResource;
 use App\Models\User;
 use App\Models\VaultItem;
+use App\Services\Audit\AuditLogger;
 use App\Services\VaultItemService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -20,6 +22,7 @@ class VaultItemController extends Controller
 {
     public function __construct(
         private readonly VaultItemService $items,
+        private readonly AuditLogger $audit,
     ) {}
 
     /**
@@ -51,6 +54,8 @@ class VaultItemController extends Controller
 
         $item = $this->items->create($user, VaultItemDTO::fromArray($request->validated()));
 
+        $this->audit->log(AuditAction::ItemCreated, $item);
+
         return (new VaultItemResource($item))->withData();
     }
 
@@ -60,6 +65,8 @@ class VaultItemController extends Controller
     public function show(VaultItem $vaultItem): VaultItemResource
     {
         $this->authorize('view', $vaultItem);
+
+        $this->audit->log(AuditAction::ItemViewed, $vaultItem);
 
         return (new VaultItemResource($vaultItem))->withData();
     }
@@ -73,6 +80,8 @@ class VaultItemController extends Controller
 
         $item = $this->items->update($vaultItem, VaultItemDTO::fromArray($request->validated()));
 
+        $this->audit->log(AuditAction::ItemUpdated, $item);
+
         return (new VaultItemResource($item))->withData();
     }
 
@@ -82,6 +91,8 @@ class VaultItemController extends Controller
     public function destroy(VaultItem $vaultItem): Response
     {
         $this->authorize('delete', $vaultItem);
+
+        $this->audit->log(AuditAction::ItemDeleted, $vaultItem);
 
         $this->items->delete($vaultItem);
 

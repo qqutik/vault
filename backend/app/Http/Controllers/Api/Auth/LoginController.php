@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\Auth;
 
+use App\Enums\AuditAction;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginOptionsRequest;
 use App\Http\Resources\UserResource;
 use App\Models\User;
+use App\Services\Audit\AuditLogger;
 use Illuminate\Contracts\Support\Responsable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -18,6 +20,10 @@ use Laragear\WebAuthn\Http\Requests\AssertionRequest;
 
 class LoginController extends Controller
 {
+    public function __construct(
+        private readonly AuditLogger $audit,
+    ) {}
+
     /**
      * Step 1 — return assertion (passkey login) options. Usernameless when no
      * email is supplied.
@@ -45,6 +51,8 @@ class LoginController extends Controller
         }
 
         /** @var User $user */
+        $this->audit->log(AuditAction::LoginSuccess, user: $user);
+
         return response()->json([
             'user' => new UserResource($user),
         ]);
@@ -55,6 +63,10 @@ class LoginController extends Controller
      */
     public function logout(Request $request): JsonResponse
     {
+        /** @var User $user */
+        $user = $request->user();
+        $this->audit->log(AuditAction::Logout, user: $user);
+
         Auth::guard('web')->logout();
 
         $request->session()->invalidate();

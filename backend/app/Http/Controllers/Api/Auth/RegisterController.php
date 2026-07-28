@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\Auth;
 
 use App\DTO\RegisterUserDTO;
+use App\Enums\AuditAction;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\RegisterOptionsRequest;
 use App\Http\Resources\UserResource;
 use App\Models\User;
+use App\Services\Audit\AuditLogger;
 use App\Services\Auth\PasskeyRegistrationService;
 use Illuminate\Contracts\Support\Responsable;
 use Illuminate\Http\JsonResponse;
@@ -19,6 +21,7 @@ class RegisterController extends Controller
 {
     public function __construct(
         private readonly PasskeyRegistrationService $registration,
+        private readonly AuditLogger $audit,
     ) {}
 
     /**
@@ -53,6 +56,8 @@ class RegisterController extends Controller
         Auth::guard('web')->login($user);
         $request->session()->regenerate();
         $request->session()->forget('webauthn.register_user_id');
+
+        $this->audit->log(AuditAction::Registered, user: $user);
 
         return response()->json([
             'user' => new UserResource($user),

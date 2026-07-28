@@ -58,4 +58,12 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
     {
         return $this->hasMany(RecoveryCode::class);
     }
+
+    /**
+     * @return HasMany<AuditLog, $this>
+     */
+    public function auditLogs(): HasMany
+    {
+        return $this->hasMany(AuditLog::class);
+    }
 }
