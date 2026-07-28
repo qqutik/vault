@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { fetchDashboard, logout, type Dashboard } from './api/client';
 import { loginWithPasskey, registerPasskey } from './auth/passkey';
+import ActivityLog from './features/activity/ActivityLog';
 import FolderList from './features/folders/FolderList';
 import VaultItems from './features/vault/VaultItems';
 import './App.css';
@@ -108,6 +109,8 @@ export default function App() {
         <VaultItems onChange={() => fetchDashboard().then(setDashboard)} />
 
         <FolderList onChange={() => fetchDashboard().then(setDashboard)} />
+
+        <ActivityLog />
 
         <button className="secondary" onClick={handleLogout}>
           Log out

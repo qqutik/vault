@@ -28,6 +28,16 @@ it('queues an audit job when an item is created', function () {
     Queue::assertPushed(RecordAuditLog::class);
 });
 
+it('queues an audit job when a folder is created', function () {
+    Queue::fake();
+    $user = User::factory()->create();
+    Sanctum::actingAs($user);
+
+    $this->postJson('/api/folders', ['name' => 'Work'])->assertCreated();
+
+    Queue::assertPushed(RecordAuditLog::class);
+});
+
 it('queues an audit job when an item is viewed', function () {
     Queue::fake();
     $user = User::factory()->create();

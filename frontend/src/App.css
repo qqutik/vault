@@ -422,3 +422,57 @@ textarea:focus {
   outline: none;
   border-color: #5b7cfa;
 }
+
+.activity {
+  margin-top: 1.5rem;
+  border-top: 1px solid #262b36;
+  padding-top: 1.25rem;
+}
+
+.activity-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.activity-header h2 {
+  margin: 0;
+}
+
+button.small.secondary {
+  background: transparent;
+  border: 1px solid #2a303c;
+  color: #e7e9ee;
+}
+
+.activity-items {
+  list-style: none;
+  padding: 0;
+  margin: 0.75rem 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.activity-items li {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.45rem 0.15rem;
+  border-bottom: 1px solid #1a1f28;
+  font-size: 0.9rem;
+}
+
+.activity-icon {
+  width: 1.4rem;
+  text-align: center;
+}
+
+.activity-label {
+  flex: 1;
+}
+
+.activity-time {
+  color: #8b93a3;
+  font-size: 0.8rem;
+}

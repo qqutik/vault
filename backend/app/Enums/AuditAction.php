@@ -14,4 +14,8 @@ enum AuditAction: string
     case ItemCreated = 'item.created';
     case ItemUpdated = 'item.updated';
     case ItemDeleted = 'item.deleted';
+
+    case FolderCreated = 'folder.created';
+    case FolderUpdated = 'folder.updated';
+    case FolderDeleted = 'folder.deleted';
 }

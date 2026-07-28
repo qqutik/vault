@@ -148,3 +148,18 @@ export async function deleteVaultItem(id: number): Promise<void> {
   await ensureCsrf();
   await api.delete(`/vault-items/${id}`);
 }
+
+export interface AuditLog {
+  id: number;
+  action: string;
+  auditable_type: string | null;
+  auditable_id: number | null;
+  ip: string | null;
+  user_agent: string | null;
+  created_at: string;
+}
+
+export async function fetchAuditLogs(): Promise<AuditLog[]> {
+  const { data } = await api.get<AuditLog[]>('/audit-logs');
+  return data;
+}

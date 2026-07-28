@@ -5,12 +5,14 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api;
 
 use App\DTO\FolderDTO;
+use App\Enums\AuditAction;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Folder\StoreFolderRequest;
 use App\Http\Requests\Folder\UpdateFolderRequest;
 use App\Http\Resources\FolderResource;
 use App\Models\Folder;
 use App\Models\User;
+use App\Services\Audit\AuditLogger;
 use App\Services\FolderService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -20,6 +22,7 @@ class FolderController extends Controller
 {
     public function __construct(
         private readonly FolderService $folders,
+        private readonly AuditLogger $audit,
     ) {}
 
     public function index(Request $request): AnonymousResourceCollection
@@ -41,6 +44,8 @@ class FolderController extends Controller
 
         $folder = $this->folders->create($user, FolderDTO::fromArray($request->validated()));
 
+        $this->audit->log(AuditAction::FolderCreated, $folder);
+
         return new FolderResource($folder);
     }
 
@@ -57,12 +62,16 @@ class FolderController extends Controller
 
         $folder = $this->folders->update($folder, FolderDTO::fromArray($request->validated()));
 
+        $this->audit->log(AuditAction::FolderUpdated, $folder);
+
         return new FolderResource($folder);
     }
 
     public function destroy(Folder $folder): Response
     {
         $this->authorize('delete', $folder);
+
+        $this->audit->log(AuditAction::FolderDeleted, $folder);
 
         $this->folders->delete($folder);
 
