@@ -140,7 +140,7 @@ export default function App() {
           <FolderList onChange={refresh} />
         )}
 
-        <ActivityLog />
+        <ActivityLog userId={dashboard.user.id} />
       </main>
     );
   }

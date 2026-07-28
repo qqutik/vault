@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { fetchAuditLogs, type AuditLog, type Paginated } from '../../api/client';
+import { echo } from '../../echo';
 
 const ACTION_LABELS: Record<string, string> = {
   'auth.registered': 'Registered',
@@ -37,10 +38,14 @@ function timeAgo(iso: string): string {
   return `${Math.floor(hours / 24)}d ago`;
 }
 
-export default function ActivityLog() {
+export default function ActivityLog({ userId }: { userId: number }) {
   const [page, setPage] = useState(1);
   const [result, setResult] = useState<Paginated<AuditLog> | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const pageRef = useRef(page);
+  pageRef.current = page;
+  const reloadTimer = useRef<number | null>(null);
 
   async function load(p: number) {
     setError(null);
@@ -54,6 +59,26 @@ export default function ActivityLog() {
   useEffect(() => {
     load(page);
   }, [page]);
+
+  // Live updates: when the server pushes a new entry, reload the current page
+  // so the table (and its pagination) stays consistent. Debounced for bursts.
+  useEffect(() => {
+    const channelName = `user.${userId}.activity`;
+    echo.private(channelName).listen('.audit.recorded', () => {
+      if (reloadTimer.current) {
+        clearTimeout(reloadTimer.current);
+      }
+      reloadTimer.current = window.setTimeout(() => load(pageRef.current), 200);
+    });
+
+    return () => {
+      if (reloadTimer.current) {
+        clearTimeout(reloadTimer.current);
+      }
+      echo.leave(channelName);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId]);
 
   const logs = result?.data ?? [];
   const meta = result?.meta;
