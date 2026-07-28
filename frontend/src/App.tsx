@@ -3,12 +3,12 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { fetchDashboard, logout, type Dashboard } from './api/client';
 import { loginWithPasskey, registerPasskey } from './auth/passkey';
 import ActivityLog from './features/activity/ActivityLog';
-import FolderList from './features/folders/FolderList';
-import VaultItems from './features/vault/VaultItems';
+import VaultBrowser from './features/vault/VaultBrowser';
+import PasskeyManager from './features/passkeys/PasskeyManager';
 import { LogoutIcon } from './components/icons';
 import './App.css';
 
-type Tab = 'items' | 'folders';
+type Tab = 'vault' | 'passkeys';
 
 type Mode = 'login' | 'register';
 
@@ -29,7 +29,9 @@ export default function App() {
 
   const location = useLocation();
   const navigate = useNavigate();
-  const tab: Tab = location.pathname.startsWith('/folders') ? 'folders' : 'items';
+  const tab: Tab = location.pathname.startsWith('/passkeys') ? 'passkeys' : 'vault';
+  const favActive =
+    tab === 'vault' && new URLSearchParams(location.search).get('fav') === '1';
 
   const [checking, setChecking] = useState(true);
   const [dashboard, setDashboard] = useState<Dashboard | null>(null);
@@ -43,10 +45,10 @@ export default function App() {
       .finally(() => setChecking(false));
   }, []);
 
-  // Default authenticated route.
+  // Default authenticated route (also redirect legacy paths).
   useEffect(() => {
-    if (dashboard && location.pathname === '/') {
-      navigate('/items', { replace: true });
+    if (dashboard && ['/', '/items', '/folders'].includes(location.pathname)) {
+      navigate('/vault', { replace: true });
     }
   }, [dashboard, location.pathname, navigate]);
 
@@ -130,25 +132,30 @@ export default function App() {
 
         <div className="stats">
           <StatTab
-            label="Folders"
-            value={dashboard.stats.folders}
-            active={tab === 'folders'}
-            onClick={() => navigate('/folders')}
-          />
-          <StatTab
             label="Items"
             value={dashboard.stats.vault_items}
-            active={tab === 'items'}
-            onClick={() => navigate('/items')}
+            active={tab === 'vault' && !favActive}
+            onClick={() => navigate('/vault')}
           />
-          <Stat label="Passkeys" value={dashboard.stats.passkeys} />
-          <Stat label="Favorites" value={dashboard.stats.favorites} />
+          <StatTab
+            label="Favorites"
+            value={dashboard.stats.favorites}
+            active={favActive}
+            onClick={() => navigate('/vault?fav=1')}
+          />
+          <StatTab
+            label="Passkeys"
+            value={dashboard.stats.passkeys}
+            active={tab === 'passkeys'}
+            onClick={() => navigate('/passkeys')}
+          />
+          <Stat label="Folders" value={dashboard.stats.folders} />
         </div>
 
-        {tab === 'items' ? (
-          <VaultItems onChange={refresh} />
+        {tab === 'passkeys' ? (
+          <PasskeyManager onChange={refresh} />
         ) : (
-          <FolderList onChange={refresh} />
+          <VaultBrowser onChange={refresh} />
         )}
 
         <ActivityLog userId={dashboard.user.id} />

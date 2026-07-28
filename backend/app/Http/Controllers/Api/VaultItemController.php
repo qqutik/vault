@@ -15,9 +15,13 @@ use App\Http\Resources\VaultItemResource;
 use App\Models\User;
 use App\Models\VaultItem;
 use App\Services\Audit\AuditLogger;
+use App\Services\Auth\PasskeyAssertionService;
 use App\Services\VaultItemService;
+use Illuminate\Contracts\Support\Responsable;
+use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
+use Laragear\WebAuthn\Http\Requests\AssertionRequest;
 
 class VaultItemController extends Controller
 {
@@ -28,6 +32,7 @@ class VaultItemController extends Controller
     public function __construct(
         private readonly VaultItemService $items,
         private readonly AuditLogger $audit,
+        private readonly PasskeyAssertionService $assertion,
     ) {}
 
     /**
@@ -69,7 +74,8 @@ class VaultItemController extends Controller
     }
 
     /**
-     * Show a single item, including its decrypted secret payload.
+     * Show a single item. The secret payload is withheld for items that
+     * require re-authentication — those must be opened via the unlock flow.
      *
      * @param  VaultItem  $vaultItem
      * @return VaultItemResource
@@ -78,7 +84,52 @@ class VaultItemController extends Controller
     {
         $this->authorize('view', $vaultItem);
 
+        if ($vaultItem->require_reauth) {
+            return new VaultItemResource($vaultItem);
+        }
+
         $this->audit->log(AuditAction::ItemViewed, $vaultItem);
+
+        return (new VaultItemResource($vaultItem))->withData();
+    }
+
+    /**
+     * Step 1 of unlocking a protected item — return passkey assertion options
+     * scoped to the current user.
+     *
+     * @param  AssertionRequest  $request
+     * @param  VaultItem  $vaultItem
+     * @return Responsable
+     */
+    public function unlockOptions(AssertionRequest $request, VaultItem $vaultItem): Responsable
+    {
+        $this->authorize('view', $vaultItem);
+
+        /** @var User $user */
+        $user = $request->user();
+
+        return $request->toVerify($user);
+    }
+
+    /**
+     * Step 2 of unlocking a protected item — verify the passkey assertion for
+     * the current user and, on success, return the decrypted secret payload.
+     * No session or grace window is kept: every open re-prompts.
+     *
+     * @param  Request  $request
+     * @param  VaultItem  $vaultItem
+     * @return VaultItemResource
+     */
+    public function unlock(Request $request, VaultItem $vaultItem): VaultItemResource
+    {
+        $this->authorize('view', $vaultItem);
+
+        /** @var User $user */
+        $user = $request->user();
+
+        $this->assertion->verifyForUser($user);
+
+        $this->audit->log(AuditAction::ItemUnlocked, $vaultItem);
 
         return (new VaultItemResource($vaultItem))->withData();
     }

@@ -14,6 +14,7 @@ final class VaultItemDTO extends BaseDTO
      * @param  string  $title  Plaintext title used for listing.
      * @param  array<string, mixed>  $data  Secret payload (stored encrypted).
      * @param  bool  $favorite  Whether the item is a favorite.
+     * @param  bool  $requireReauth  Whether viewing requires a fresh passkey.
      */
     public function __construct(
         protected ?int $folderId,
@@ -21,12 +22,13 @@ final class VaultItemDTO extends BaseDTO
         protected string $title,
         protected array $data,
         protected bool $favorite,
+        protected bool $requireReauth,
     ) {}
 
     /**
      * Build the DTO from validated request input.
      *
-     * @param  array{folder_id?: int|null, type: string, title: string, data: array<string, mixed>, favorite?: bool}  $validated
+     * @param  array{folder_id?: int|null, type: string, title: string, data: array<string, mixed>, favorite?: bool, require_reauth?: bool}  $validated
      * @return self
      */
     public static function fromArray(array $validated): self
@@ -37,6 +39,7 @@ final class VaultItemDTO extends BaseDTO
             title: $validated['title'],
             data: $validated['data'],
             favorite: $validated['favorite'] ?? false,
+            requireReauth: $validated['require_reauth'] ?? false,
         );
     }
 
@@ -143,5 +146,26 @@ final class VaultItemDTO extends BaseDTO
     public function setFavorite(bool $favorite): void
     {
         $this->favorite = $favorite;
+    }
+
+    /**
+     * Whether viewing the item requires a fresh passkey assertion.
+     *
+     * @return bool
+     */
+    public function getRequireReauth(): bool
+    {
+        return $this->requireReauth;
+    }
+
+    /**
+     * Set whether viewing requires a fresh passkey assertion.
+     *
+     * @param  bool  $requireReauth
+     * @return void
+     */
+    public function setRequireReauth(bool $requireReauth): void
+    {
+        $this->requireReauth = $requireReauth;
     }
 }

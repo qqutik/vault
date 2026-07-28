@@ -10,7 +10,11 @@ enum AuditAction: string
     case LoginSuccess = 'login.success';
     case Logout = 'logout';
 
+    case PasskeyAdded = 'passkey.added';
+    case PasskeyRemoved = 'passkey.removed';
+
     case ItemViewed = 'item.viewed';
+    case ItemUnlocked = 'item.unlocked';
     case ItemCreated = 'item.created';
     case ItemUpdated = 'item.updated';
     case ItemDeleted = 'item.deleted';

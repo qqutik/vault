@@ -347,7 +347,58 @@ select:focus {
 }
 
 .folder-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
   font-size: 0.95rem;
+}
+
+.folder-name svg {
+  flex: none;
+  color: #8ea2ff;
+}
+
+.tree {
+  list-style: none;
+  padding: 0;
+  margin: 0.75rem 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.tree li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.folder-open {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+  background: #0f1115;
+  border: 1px solid #262b36;
+  border-radius: 10px;
+  padding: 0.6rem 0.8rem;
+  color: #e7e9ee;
+  text-align: left;
+  min-width: 0;
+}
+
+.folder-open:hover {
+  border-color: #3a4152;
+  background: #171b24;
+}
+
+.tree-chevron {
+  width: 0.9rem;
+  flex-shrink: 0;
+  color: #8b93a3;
+  font-size: 0.8rem;
 }
 
 .folder-actions {
@@ -475,8 +526,139 @@ button.small {
   box-shadow: 0 0 0 1px #5b7cfa inset;
 }
 
+.item-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
 .item-icon {
-  margin-right: 0.4rem;
+  display: inline-flex;
+  flex: none;
+  color: #8ea2ff;
+}
+
+.item-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex: none;
+}
+
+.item-protected {
+  display: inline-flex;
+  color: #8b93a3;
+}
+
+.item-created {
+  font-size: 0.8rem;
+  margin: 0.5rem 0 0;
+}
+
+.crumbs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.15rem;
+  margin-bottom: 0.75rem;
+  font-size: 0.9rem;
+}
+
+.crumb-part {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+}
+
+.crumb {
+  background: none;
+  border: none;
+  padding: 0.15rem 0.25rem;
+  width: auto;
+  color: #8ea2ff;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  border-radius: 6px;
+}
+
+.crumb:hover {
+  background: #1b2030;
+}
+
+.crumb.active {
+  color: #e7e9ee;
+  cursor: default;
+}
+
+.crumb-sep {
+  color: #5b6272;
+  font-size: 0.8rem;
+}
+
+.icon-btn.add-folder {
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+}
+
+.passkeys {
+  margin-top: 1.5rem;
+  border-top: 1px solid #262b36;
+  padding-top: 1.25rem;
+}
+
+.passkeys-hint {
+  flex: 1;
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
+.passkey-items {
+  list-style: none;
+  padding: 0;
+  margin: 0.75rem 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.passkey-items li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.passkey-row {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  background: #0f1115;
+  border: 1px solid #262b36;
+  border-radius: 10px;
+  padding: 0.6rem 0.8rem;
+  min-width: 0;
+}
+
+.passkey-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.95rem;
+}
+
+.passkey-name svg {
+  flex: none;
+  color: #8ea2ff;
+}
+
+.passkey-date {
+  font-size: 0.72rem;
+  color: #8b93a3;
 }
 
 .item-type {

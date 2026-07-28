@@ -63,6 +63,26 @@ class PasskeyRegistrationService
     }
 
     /**
+     * Build attestation options to add a passkey to an already-registered,
+     * authenticated user (a second device: phone, laptop, security key…).
+     *
+     * @param  User  $user
+     * @return Responsable
+     */
+    public function createOptionsForUser(User $user): Responsable
+    {
+        $creation = new AttestationCreation(
+            user: $user,
+            residentKey: ResidentKey::Required,        // discoverable credential → usernameless login
+            userVerification: UserVerification::Preferred,
+        );
+
+        return $this->container->make(AttestationCreator::class)
+            ->send($creation)
+            ->then(static fn (AttestationCreation $creation): Responsable => $creation->json);
+    }
+
+    /**
      * Finalize a registration once the passkey has been stored: issue the
      * one-time recovery codes.
      *

@@ -101,6 +101,7 @@ export interface VaultItemSummary {
   type: VaultItemType;
   title: string;
   favorite: boolean;
+  require_reauth: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -115,6 +116,7 @@ export interface VaultItemPayload {
   data: Record<string, string>;
   folder_id: number | null;
   favorite: boolean;
+  require_reauth: boolean;
 }
 
 export interface VaultItemFilters {
@@ -158,6 +160,24 @@ export async function updateVaultItem(
 export async function deleteVaultItem(id: number): Promise<void> {
   await ensureCsrf();
   await api.delete(`/vault-items/${id}`);
+}
+
+export interface Passkey {
+  id: string;
+  alias: string | null;
+  disabled: boolean;
+  created_at: string;
+}
+
+export async function fetchPasskeys(): Promise<Passkey[]> {
+  const { data } = await api.get<Passkey[]>('/passkeys');
+  return data;
+}
+
+export async function deletePasskey(id: string): Promise<Passkey[]> {
+  await ensureCsrf();
+  const { data } = await api.delete<{ passkeys: Passkey[] }>('/passkeys', { data: { id } });
+  return data.passkeys;
 }
 
 export interface AuditLog {

@@ -42,6 +42,7 @@ class VaultItemResource extends JsonResource
             'type' => $this->type,
             'title' => $this->title,
             'favorite' => $this->favorite,
+            'require_reauth' => $this->require_reauth,
             'data' => $this->when($this->withData, fn (): array => $this->data),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,

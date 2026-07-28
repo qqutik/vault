@@ -20,10 +20,11 @@ use Illuminate\Support\Carbon;
  * @property string $title
  * @property array<string, mixed> $data
  * @property bool $favorite
+ * @property bool $require_reauth
  * @property Carbon $created_at
  * @property Carbon $updated_at
  */
-#[Fillable(['folder_id', 'type', 'title', 'data', 'favorite'])]
+#[Fillable(['folder_id', 'type', 'title', 'data', 'favorite', 'require_reauth'])]
 class VaultItem extends Model
 {
     /** @use HasFactory<VaultItemFactory> */
@@ -38,6 +39,7 @@ class VaultItem extends Model
             'type' => VaultItemType::class,
             'data' => 'encrypted:array', // 🔒 AES-256-GCM at rest via APP_KEY
             'favorite' => 'boolean',
+            'require_reauth' => 'boolean',
         ];
     }
 

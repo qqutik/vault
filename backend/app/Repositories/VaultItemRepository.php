@@ -60,6 +60,7 @@ class VaultItemRepository
             'title' => $dto->getTitle(),
             'data' => $dto->getData(),
             'favorite' => $dto->getFavorite(),
+            'require_reauth' => $dto->getRequireReauth(),
         ]);
     }
 
@@ -78,6 +79,7 @@ class VaultItemRepository
             'title' => $dto->getTitle(),
             'data' => $dto->getData(),
             'favorite' => $dto->getFavorite(),
+            'require_reauth' => $dto->getRequireReauth(),
         ]);
 
         return $item;

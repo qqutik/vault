@@ -38,6 +38,7 @@ class StoreVaultItemRequest extends FormRequest
             'title' => ['required', 'string', 'max:255'],
             'data' => ['required', 'array'],
             'favorite' => ['sometimes', 'boolean'],
+            'require_reauth' => ['sometimes', 'boolean'],
         ];
     }
 }

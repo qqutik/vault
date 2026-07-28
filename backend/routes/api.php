@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\Auth\LoginController;
 use App\Http\Controllers\Api\Auth\RegisterController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\FolderController;
+use App\Http\Controllers\Api\PasskeyController;
 use App\Http\Controllers\Api\VaultItemController;
 use App\Http\Resources\UserResource;
 use Illuminate\Http\JsonResponse;
@@ -50,7 +51,17 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::get('/dashboard', [DashboardController::class, 'index']);
 
     Route::apiResource('folders', FolderController::class);
+
+    // Step-up: unlock an item that requires a fresh passkey before revealing it.
+    Route::post('vault-items/{vaultItem}/unlock/options', [VaultItemController::class, 'unlockOptions']);
+    Route::post('vault-items/{vaultItem}/unlock', [VaultItemController::class, 'unlock']);
     Route::apiResource('vault-items', VaultItemController::class);
+
+    // Passkey (device) management — register additional passkeys and remove them.
+    Route::get('/passkeys', [PasskeyController::class, 'index']);
+    Route::post('/passkeys/options', [PasskeyController::class, 'options']);
+    Route::post('/passkeys/verify', [PasskeyController::class, 'verify']);
+    Route::delete('/passkeys', [PasskeyController::class, 'destroy']);
 
     Route::get('/audit-logs', [AuditLogController::class, 'index']);
 });
