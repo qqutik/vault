@@ -20,6 +20,10 @@ use Illuminate\Http\Response;
 
 class VaultItemController extends Controller
 {
+    /**
+     * @param  VaultItemService  $items
+     * @param  AuditLogger  $audit
+     */
     public function __construct(
         private readonly VaultItemService $items,
         private readonly AuditLogger $audit,
@@ -27,6 +31,9 @@ class VaultItemController extends Controller
 
     /**
      * List the current user's items (metadata only), optionally by folder.
+     *
+     * @param  Request  $request
+     * @return AnonymousResourceCollection
      */
     public function index(Request $request): AnonymousResourceCollection
     {
@@ -44,6 +51,9 @@ class VaultItemController extends Controller
 
     /**
      * Create a new item.
+     *
+     * @param  StoreVaultItemRequest  $request
+     * @return VaultItemResource
      */
     public function store(StoreVaultItemRequest $request): VaultItemResource
     {
@@ -61,6 +71,9 @@ class VaultItemController extends Controller
 
     /**
      * Show a single item, including its decrypted secret payload.
+     *
+     * @param  VaultItem  $vaultItem
+     * @return VaultItemResource
      */
     public function show(VaultItem $vaultItem): VaultItemResource
     {
@@ -73,6 +86,10 @@ class VaultItemController extends Controller
 
     /**
      * Update an item.
+     *
+     * @param  UpdateVaultItemRequest  $request
+     * @param  VaultItem  $vaultItem
+     * @return VaultItemResource
      */
     public function update(UpdateVaultItemRequest $request, VaultItem $vaultItem): VaultItemResource
     {
@@ -87,6 +104,9 @@ class VaultItemController extends Controller
 
     /**
      * Delete an item.
+     *
+     * @param  VaultItem  $vaultItem
+     * @return Response
      */
     public function destroy(VaultItem $vaultItem): Response
     {

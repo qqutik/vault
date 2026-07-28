@@ -13,6 +13,8 @@ class AuditLogRepository
     /**
      * The most recent audit entries for a user.
      *
+     * @param  User  $user
+     * @param  int  $limit
      * @return Collection<int, AuditLog>
      */
     public function forUser(User $user, int $limit = 50): Collection

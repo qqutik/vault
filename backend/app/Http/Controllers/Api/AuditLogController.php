@@ -13,12 +13,18 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class AuditLogController extends Controller
 {
+    /**
+     * @param  AuditLogRepository  $auditLogs
+     */
     public function __construct(
         private readonly AuditLogRepository $auditLogs,
     ) {}
 
     /**
      * List the current user's recent activity.
+     *
+     * @param  Request  $request
+     * @return AnonymousResourceCollection
      */
     public function index(Request $request): AnonymousResourceCollection
     {

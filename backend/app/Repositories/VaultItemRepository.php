@@ -14,6 +14,8 @@ class VaultItemRepository
     /**
      * List a user's items, optionally scoped to a folder.
      *
+     * @param  User  $user
+     * @param  int|null  $folderId
      * @return Collection<int, VaultItem>
      */
     public function forUser(User $user, ?int $folderId = null): Collection
@@ -26,6 +28,10 @@ class VaultItemRepository
 
     /**
      * Create an item for the user from the given DTO.
+     *
+     * @param  User  $user
+     * @param  VaultItemDTO  $dto
+     * @return VaultItem
      */
     public function create(User $user, VaultItemDTO $dto): VaultItem
     {
@@ -40,6 +46,10 @@ class VaultItemRepository
 
     /**
      * Update an item from the given DTO.
+     *
+     * @param  VaultItem  $item
+     * @param  VaultItemDTO  $dto
+     * @return VaultItem
      */
     public function update(VaultItem $item, VaultItemDTO $dto): VaultItem
     {
@@ -56,6 +66,9 @@ class VaultItemRepository
 
     /**
      * Delete an item.
+     *
+     * @param  VaultItem  $item
+     * @return void
      */
     public function delete(VaultItem $item): void
     {

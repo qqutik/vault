@@ -6,6 +6,14 @@ namespace App\DTO;
 
 final class AuditEntryDTO extends BaseDTO
 {
+    /**
+     * @param  string  $action  Action key (e.g. "item.viewed").
+     * @param  int|null  $userId  Acting user id, or null for anonymous.
+     * @param  string|null  $auditableType  Audited entity morph type, if any.
+     * @param  int|null  $auditableId  Audited entity id, if any.
+     * @param  string|null  $ip  Request IP address.
+     * @param  string|null  $userAgent  Request user agent.
+     */
     public function __construct(
         protected string $action,
         protected ?int $userId,
@@ -19,6 +27,7 @@ final class AuditEntryDTO extends BaseDTO
      * Build the DTO from an array.
      *
      * @param  array{action: string, user_id?: int|null, auditable_type?: string|null, auditable_id?: int|null, ip?: string|null, user_agent?: string|null}  $validated
+     * @return self
      */
     public static function fromArray(array $validated): self
     {
@@ -34,6 +43,8 @@ final class AuditEntryDTO extends BaseDTO
 
     /**
      * Get the action key (e.g. "item.viewed").
+     *
+     * @return string
      */
     public function getAction(): string
     {
@@ -42,6 +53,9 @@ final class AuditEntryDTO extends BaseDTO
 
     /**
      * Set the action key.
+     *
+     * @param  string  $action
+     * @return void
      */
     public function setAction(string $action): void
     {
@@ -50,6 +64,8 @@ final class AuditEntryDTO extends BaseDTO
 
     /**
      * Get the acting user id, or null for anonymous.
+     *
+     * @return int|null
      */
     public function getUserId(): ?int
     {
@@ -58,6 +74,9 @@ final class AuditEntryDTO extends BaseDTO
 
     /**
      * Set the acting user id.
+     *
+     * @param  int|null  $userId
+     * @return void
      */
     public function setUserId(?int $userId): void
     {
@@ -66,6 +85,8 @@ final class AuditEntryDTO extends BaseDTO
 
     /**
      * Get the audited entity morph type, if any.
+     *
+     * @return string|null
      */
     public function getAuditableType(): ?string
     {
@@ -74,6 +95,9 @@ final class AuditEntryDTO extends BaseDTO
 
     /**
      * Set the audited entity morph type.
+     *
+     * @param  string|null  $auditableType
+     * @return void
      */
     public function setAuditableType(?string $auditableType): void
     {
@@ -82,6 +106,8 @@ final class AuditEntryDTO extends BaseDTO
 
     /**
      * Get the audited entity id, if any.
+     *
+     * @return int|null
      */
     public function getAuditableId(): ?int
     {
@@ -90,6 +116,9 @@ final class AuditEntryDTO extends BaseDTO
 
     /**
      * Set the audited entity id.
+     *
+     * @param  int|null  $auditableId
+     * @return void
      */
     public function setAuditableId(?int $auditableId): void
     {
@@ -98,6 +127,8 @@ final class AuditEntryDTO extends BaseDTO
 
     /**
      * Get the request IP address.
+     *
+     * @return string|null
      */
     public function getIp(): ?string
     {
@@ -106,6 +137,9 @@ final class AuditEntryDTO extends BaseDTO
 
     /**
      * Set the request IP address.
+     *
+     * @param  string|null  $ip
+     * @return void
      */
     public function setIp(?string $ip): void
     {
@@ -114,6 +148,8 @@ final class AuditEntryDTO extends BaseDTO
 
     /**
      * Get the request user agent.
+     *
+     * @return string|null
      */
     public function getUserAgent(): ?string
     {
@@ -122,6 +158,9 @@ final class AuditEntryDTO extends BaseDTO
 
     /**
      * Set the request user agent.
+     *
+     * @param  string|null  $userAgent
+     * @return void
      */
     public function setUserAgent(?string $userAgent): void
     {

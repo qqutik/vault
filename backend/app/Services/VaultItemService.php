@@ -12,6 +12,9 @@ use Illuminate\Database\Eloquent\Collection;
 
 class VaultItemService
 {
+    /**
+     * @param  VaultItemRepository  $items
+     */
     public function __construct(
         private readonly VaultItemRepository $items,
     ) {}
@@ -19,6 +22,8 @@ class VaultItemService
     /**
      * List a user's items, optionally scoped to a folder.
      *
+     * @param  User  $user
+     * @param  int|null  $folderId
      * @return Collection<int, VaultItem>
      */
     public function forUser(User $user, ?int $folderId = null): Collection
@@ -28,6 +33,10 @@ class VaultItemService
 
     /**
      * Create a new item for the user.
+     *
+     * @param  User  $user
+     * @param  VaultItemDTO  $dto
+     * @return VaultItem
      */
     public function create(User $user, VaultItemDTO $dto): VaultItem
     {
@@ -36,6 +45,10 @@ class VaultItemService
 
     /**
      * Update an existing item.
+     *
+     * @param  VaultItem  $item
+     * @param  VaultItemDTO  $dto
+     * @return VaultItem
      */
     public function update(VaultItem $item, VaultItemDTO $dto): VaultItem
     {
@@ -44,6 +57,9 @@ class VaultItemService
 
     /**
      * Delete an item.
+     *
+     * @param  VaultItem  $item
+     * @return void
      */
     public function delete(VaultItem $item): void
     {

@@ -11,6 +11,9 @@ class DashboardService
 {
     /**
      * Build the dashboard summary (owner + counts) for a user.
+     *
+     * @param  User  $user
+     * @return DashboardDTO
      */
     public function forUser(User $user): DashboardDTO
     {

@@ -20,11 +20,21 @@ use Illuminate\Http\Response;
 
 class FolderController extends Controller
 {
+    /**
+     * @param  FolderService  $folders
+     * @param  AuditLogger  $audit
+     */
     public function __construct(
         private readonly FolderService $folders,
         private readonly AuditLogger $audit,
     ) {}
 
+    /**
+     * List the current user's folders.
+     *
+     * @param  Request  $request
+     * @return AnonymousResourceCollection
+     */
     public function index(Request $request): AnonymousResourceCollection
     {
         $this->authorize('viewAny', Folder::class);
@@ -35,6 +45,12 @@ class FolderController extends Controller
         return FolderResource::collection($this->folders->forUser($user));
     }
 
+    /**
+     * Create a folder.
+     *
+     * @param  StoreFolderRequest  $request
+     * @return FolderResource
+     */
     public function store(StoreFolderRequest $request): FolderResource
     {
         $this->authorize('create', Folder::class);
@@ -49,6 +65,12 @@ class FolderController extends Controller
         return new FolderResource($folder);
     }
 
+    /**
+     * Show a single folder.
+     *
+     * @param  Folder  $folder
+     * @return FolderResource
+     */
     public function show(Folder $folder): FolderResource
     {
         $this->authorize('view', $folder);
@@ -56,6 +78,13 @@ class FolderController extends Controller
         return new FolderResource($folder);
     }
 
+    /**
+     * Update a folder (rename / move).
+     *
+     * @param  UpdateFolderRequest  $request
+     * @param  Folder  $folder
+     * @return FolderResource
+     */
     public function update(UpdateFolderRequest $request, Folder $folder): FolderResource
     {
         $this->authorize('update', $folder);
@@ -67,6 +96,12 @@ class FolderController extends Controller
         return new FolderResource($folder);
     }
 
+    /**
+     * Delete a folder.
+     *
+     * @param  Folder  $folder
+     * @return Response
+     */
     public function destroy(Folder $folder): Response
     {
         $this->authorize('delete', $folder);

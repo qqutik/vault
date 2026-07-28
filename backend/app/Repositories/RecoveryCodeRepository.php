@@ -12,7 +12,9 @@ class RecoveryCodeRepository
     /**
      * Replace the user's recovery codes with the given hashes.
      *
+     * @param  User  $user
      * @param  list<string>  $hashes
+     * @return void
      */
     public function replaceForUser(User $user, array $hashes): void
     {
@@ -24,6 +26,9 @@ class RecoveryCodeRepository
     }
 
     /**
+     * The user's unused recovery codes.
+     *
+     * @param  User  $user
      * @return iterable<int, RecoveryCode>
      */
     public function unusedForUser(User $user): iterable

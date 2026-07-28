@@ -14,6 +14,9 @@ class RecoveryCodeService
     /** Number of one-time recovery codes generated per user. */
     private const COUNT = 10;
 
+    /**
+     * @param  RecoveryCodeRepository  $recoveryCodes
+     */
     public function __construct(
         private readonly RecoveryCodeRepository $recoveryCodes,
     ) {}
@@ -22,6 +25,7 @@ class RecoveryCodeService
      * Generate a fresh set of recovery codes, persist their hashes, and return
      * the plaintext codes. The plaintext is shown to the user exactly once.
      *
+     * @param  User  $user
      * @return list<string>
      */
     public function generateFor(User $user): array
@@ -40,6 +44,11 @@ class RecoveryCodeService
         return $codes;
     }
 
+    /**
+     * Build a single formatted recovery code.
+     *
+     * @return string
+     */
     private function makeCode(): string
     {
         return sprintf(

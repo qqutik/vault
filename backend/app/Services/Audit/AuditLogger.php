@@ -13,6 +13,9 @@ use Illuminate\Http\Request;
 
 class AuditLogger
 {
+    /**
+     * @param  Request  $request
+     */
     public function __construct(
         private readonly Request $request,
     ) {}
@@ -20,6 +23,11 @@ class AuditLogger
     /**
      * Queue an audit entry. Request context (ip / user agent) is captured now;
      * the row is written asynchronously by the RecordAuditLog job.
+     *
+     * @param  AuditAction  $action
+     * @param  Model|null  $auditable  The entity the action targets, if any.
+     * @param  User|null  $user  The acting user (defaults to the request user).
+     * @return void
      */
     public function log(AuditAction $action, ?Model $auditable = null, ?User $user = null): void
     {

@@ -18,6 +18,11 @@ use Laragear\WebAuthn\Enums\UserVerification;
 
 class PasskeyRegistrationService
 {
+    /**
+     * @param  Container  $container
+     * @param  UserRepository  $users
+     * @param  RecoveryCodeService  $recoveryCodes
+     */
     public function __construct(
         private readonly Container $container,
         private readonly UserRepository $users,
@@ -26,6 +31,9 @@ class PasskeyRegistrationService
 
     /**
      * Build the attestation (passkey creation) options for a signup.
+     *
+     * @param  RegisterUserDTO  $dto
+     * @return RegistrationOptionsDTO
      *
      * @throws ValidationException when the e-mail already owns a passkey.
      */
@@ -58,6 +66,7 @@ class PasskeyRegistrationService
      * Finalize a registration once the passkey has been stored: issue the
      * one-time recovery codes.
      *
+     * @param  User  $user
      * @return list<string>
      */
     public function complete(User $user): array

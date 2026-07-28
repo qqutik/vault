@@ -23,6 +23,8 @@ class RecordAuditLog implements ShouldQueue
 
     /**
      * Persist the audit entry.
+     *
+     * @return void
      */
     public function handle(): void
     {

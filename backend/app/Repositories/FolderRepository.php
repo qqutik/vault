@@ -12,6 +12,9 @@ use Illuminate\Database\Eloquent\Collection;
 class FolderRepository
 {
     /**
+     * List a user's folders, ordered by name.
+     *
+     * @param  User  $user
      * @return Collection<int, Folder>
      */
     public function forUser(User $user): Collection
@@ -19,11 +22,24 @@ class FolderRepository
         return $user->folders()->orderBy('name')->get();
     }
 
+    /**
+     * Find a folder by id.
+     *
+     * @param  int  $id
+     * @return Folder|null
+     */
     public function find(int $id): ?Folder
     {
         return Folder::query()->find($id);
     }
 
+    /**
+     * Create a folder for the user from the given DTO.
+     *
+     * @param  User  $user
+     * @param  FolderDTO  $dto
+     * @return Folder
+     */
     public function create(User $user, FolderDTO $dto): Folder
     {
         return $user->folders()->create([
@@ -32,6 +48,13 @@ class FolderRepository
         ]);
     }
 
+    /**
+     * Update a folder from the given DTO.
+     *
+     * @param  Folder  $folder
+     * @param  FolderDTO  $dto
+     * @return Folder
+     */
     public function update(Folder $folder, FolderDTO $dto): Folder
     {
         $folder->update([
@@ -42,6 +65,12 @@ class FolderRepository
         return $folder;
     }
 
+    /**
+     * Delete a folder.
+     *
+     * @param  Folder  $folder
+     * @return void
+     */
     public function delete(Folder $folder): void
     {
         $folder->delete();

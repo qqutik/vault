@@ -9,6 +9,9 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class RegisterOptionsRequest extends FormRequest
 {
+    /**
+     * @return bool
+     */
     public function authorize(): bool
     {
         return true;

@@ -9,6 +9,10 @@ use Illuminate\Contracts\Support\Responsable;
 
 final class RegistrationOptionsDTO extends BaseDTO
 {
+    /**
+     * @param  User  $user  Pending user the passkey is being created for.
+     * @param  Responsable  $options  Attestation options response for the client.
+     */
     public function __construct(
         protected User $user,
         protected Responsable $options,
@@ -16,6 +20,8 @@ final class RegistrationOptionsDTO extends BaseDTO
 
     /**
      * Get the pending user the passkey is being created for.
+     *
+     * @return User
      */
     public function getUser(): User
     {
@@ -24,6 +30,9 @@ final class RegistrationOptionsDTO extends BaseDTO
 
     /**
      * Set the pending user the passkey is being created for.
+     *
+     * @param  User  $user
+     * @return void
      */
     public function setUser(User $user): void
     {
@@ -32,6 +41,8 @@ final class RegistrationOptionsDTO extends BaseDTO
 
     /**
      * Get the attestation options response for the client.
+     *
+     * @return Responsable
      */
     public function getOptions(): Responsable
     {
@@ -40,6 +51,9 @@ final class RegistrationOptionsDTO extends BaseDTO
 
     /**
      * Set the attestation options response for the client.
+     *
+     * @param  Responsable  $options
+     * @return void
      */
     public function setOptions(Responsable $options): void
     {

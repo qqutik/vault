@@ -9,7 +9,11 @@ use App\Enums\VaultItemType;
 final class VaultItemDTO extends BaseDTO
 {
     /**
-     * @param  array<string, mixed>  $data
+     * @param  int|null  $folderId  Parent folder id, or null when unfiled.
+     * @param  VaultItemType  $type  Item type.
+     * @param  string  $title  Plaintext title used for listing.
+     * @param  array<string, mixed>  $data  Secret payload (stored encrypted).
+     * @param  bool  $favorite  Whether the item is a favorite.
      */
     public function __construct(
         protected ?int $folderId,
@@ -23,6 +27,7 @@ final class VaultItemDTO extends BaseDTO
      * Build the DTO from validated request input.
      *
      * @param  array{folder_id?: int|null, type: string, title: string, data: array<string, mixed>, favorite?: bool}  $validated
+     * @return self
      */
     public static function fromArray(array $validated): self
     {
@@ -37,6 +42,8 @@ final class VaultItemDTO extends BaseDTO
 
     /**
      * Get the parent folder id, or null when unfiled.
+     *
+     * @return int|null
      */
     public function getFolderId(): ?int
     {
@@ -45,6 +52,9 @@ final class VaultItemDTO extends BaseDTO
 
     /**
      * Set the parent folder id (null when unfiled).
+     *
+     * @param  int|null  $folderId
+     * @return void
      */
     public function setFolderId(?int $folderId): void
     {
@@ -53,6 +63,8 @@ final class VaultItemDTO extends BaseDTO
 
     /**
      * Get the item type.
+     *
+     * @return VaultItemType
      */
     public function getType(): VaultItemType
     {
@@ -61,6 +73,9 @@ final class VaultItemDTO extends BaseDTO
 
     /**
      * Set the item type.
+     *
+     * @param  VaultItemType  $type
+     * @return void
      */
     public function setType(VaultItemType $type): void
     {
@@ -69,6 +84,8 @@ final class VaultItemDTO extends BaseDTO
 
     /**
      * Get the item title (plaintext, used for listing).
+     *
+     * @return string
      */
     public function getTitle(): string
     {
@@ -77,6 +94,9 @@ final class VaultItemDTO extends BaseDTO
 
     /**
      * Set the item title.
+     *
+     * @param  string  $title
+     * @return void
      */
     public function setTitle(string $title): void
     {
@@ -97,6 +117,7 @@ final class VaultItemDTO extends BaseDTO
      * Set the secret payload.
      *
      * @param  array<string, mixed>  $data
+     * @return void
      */
     public function setData(array $data): void
     {
@@ -105,6 +126,8 @@ final class VaultItemDTO extends BaseDTO
 
     /**
      * Whether the item is marked as a favorite.
+     *
+     * @return bool
      */
     public function getFavorite(): bool
     {
@@ -113,6 +136,9 @@ final class VaultItemDTO extends BaseDTO
 
     /**
      * Set the favorite flag.
+     *
+     * @param  bool  $favorite
+     * @return void
      */
     public function setFavorite(bool $favorite): void
     {

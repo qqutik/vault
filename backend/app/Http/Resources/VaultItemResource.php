@@ -20,6 +20,8 @@ class VaultItemResource extends JsonResource
 
     /**
      * Include the decrypted secret payload in the output.
+     *
+     * @return static
      */
     public function withData(): static
     {
@@ -29,6 +31,7 @@ class VaultItemResource extends JsonResource
     }
 
     /**
+     * @param  Request  $request
      * @return array<string, mixed>
      */
     public function toArray(Request $request): array

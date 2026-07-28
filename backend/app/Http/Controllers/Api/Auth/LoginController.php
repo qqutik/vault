@@ -20,6 +20,9 @@ use Laragear\WebAuthn\Http\Requests\AssertionRequest;
 
 class LoginController extends Controller
 {
+    /**
+     * @param  AuditLogger  $audit
+     */
     public function __construct(
         private readonly AuditLogger $audit,
     ) {}
@@ -27,6 +30,10 @@ class LoginController extends Controller
     /**
      * Step 1 — return assertion (passkey login) options. Usernameless when no
      * email is supplied.
+     *
+     * @param  LoginOptionsRequest  $request
+     * @param  AssertionRequest  $assertion
+     * @return Responsable
      */
     public function options(LoginOptionsRequest $request, AssertionRequest $assertion): Responsable
     {
@@ -37,6 +44,9 @@ class LoginController extends Controller
 
     /**
      * Step 2 — verify the assertion and start the session (httpOnly cookie).
+     *
+     * @param  AssertedRequest  $request
+     * @return JsonResponse
      *
      * @throws ValidationException
      */
@@ -60,6 +70,9 @@ class LoginController extends Controller
 
     /**
      * Log the user out and invalidate their session.
+     *
+     * @param  Request  $request
+     * @return JsonResponse
      */
     public function logout(Request $request): JsonResponse
     {

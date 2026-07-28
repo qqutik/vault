@@ -19,6 +19,10 @@ use Laragear\WebAuthn\Http\Requests\AttestedRequest;
 
 class RegisterController extends Controller
 {
+    /**
+     * @param  PasskeyRegistrationService  $registration
+     * @param  AuditLogger  $audit
+     */
     public function __construct(
         private readonly PasskeyRegistrationService $registration,
         private readonly AuditLogger $audit,
@@ -26,6 +30,9 @@ class RegisterController extends Controller
 
     /**
      * Step 1 — create the pending user and return passkey (attestation) options.
+     *
+     * @param  RegisterOptionsRequest  $request
+     * @return Responsable
      */
     public function options(RegisterOptionsRequest $request): Responsable
     {
@@ -43,6 +50,9 @@ class RegisterController extends Controller
      * return the one-time recovery codes.
      *
      * The pending user is set on the guard by the `webauthn.pending` middleware.
+     *
+     * @param  AttestedRequest  $request
+     * @return JsonResponse
      */
     public function verify(AttestedRequest $request): JsonResponse
     {
