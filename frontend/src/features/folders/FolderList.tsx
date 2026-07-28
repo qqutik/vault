@@ -140,8 +140,6 @@ export default function FolderList({ onChange }: Props) {
 
   return (
     <section className="folders">
-      <h2>Folders</h2>
-
       <div className="section-controls">
         <input
           placeholder="Find your keys..."

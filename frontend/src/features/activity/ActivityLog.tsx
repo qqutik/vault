@@ -42,7 +42,7 @@ export default function ActivityLog({ userId }: { userId: number }) {
   const [page, setPage] = useState(1);
   const [result, setResult] = useState<Paginated<AuditLog> | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(true);
 
   const pageRef = useRef(page);
   pageRef.current = page;

@@ -184,10 +184,13 @@ export default function VaultItems({ onChange }: Props) {
     ...folders.map((f) => ({ value: String(f.id), label: f.name })),
   ];
 
+  // Favorites first (stable within each group).
+  const sortedItems = [...items].sort(
+    (a, b) => Number(b.favorite) - Number(a.favorite),
+  );
+
   return (
     <section className="vault">
-      <h2>Items</h2>
-
       <div className="section-controls">
         <input
           placeholder="Find your keys..."
@@ -199,15 +202,18 @@ export default function VaultItems({ onChange }: Props) {
         </button>
       </div>
 
-      {items.length === 0 ? (
+      {sortedItems.length === 0 ? (
         <p className="muted">No items found.</p>
       ) : (
         <ul className="vault-items">
-          {items.map((item) => (
+          {sortedItems.map((item) => (
             <li key={item.id}>
-              <button className="item-open" onClick={() => openView(item.id)}>
+              <button
+                className={`item-open${item.favorite ? ' favorite' : ''}`}
+                onClick={() => openView(item.id)}
+              >
                 <span className="item-title">
-                  {item.favorite ? '★ ' : ''}
+                  <span className="item-icon">🔑</span>
                   {item.title}
                 </span>
                 <span className="item-type">{TYPE_LABEL[item.type]}</span>
@@ -311,7 +317,7 @@ export default function VaultItems({ onChange }: Props) {
       )}
 
       {overlay === 'view' && detail && (
-        <Modal title={`${detail.favorite ? '★ ' : ''}${detail.title}`} onClose={close}>
+        <Modal title={detail.title} onClose={close}>
           <p className="muted">{TYPE_LABEL[detail.type]}</p>
 
           <dl className="item-fields">

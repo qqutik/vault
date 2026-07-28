@@ -470,6 +470,15 @@ button.small {
   background: #171b24;
 }
 
+.item-open.favorite {
+  border-color: #5b7cfa;
+  box-shadow: 0 0 0 1px #5b7cfa inset;
+}
+
+.item-icon {
+  margin-right: 0.4rem;
+}
+
 .item-type {
   font-size: 0.72rem;
   color: #8b93a3;
