@@ -10,7 +10,19 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
+/**
+ * @property int $id
+ * @property int $user_id
+ * @property int|null $folder_id
+ * @property VaultItemType $type
+ * @property string $title
+ * @property array<string, mixed> $data
+ * @property bool $favorite
+ * @property Carbon $created_at
+ * @property Carbon $updated_at
+ */
 #[Fillable(['folder_id', 'type', 'title', 'data', 'favorite'])]
 class VaultItem extends Model
 {

@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\Auth\LoginController;
 use App\Http\Controllers\Api\Auth\RegisterController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\FolderController;
+use App\Http\Controllers\Api\VaultItemController;
 use App\Http\Resources\UserResource;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -48,4 +49,5 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::get('/dashboard', [DashboardController::class, 'index']);
 
     Route::apiResource('folders', FolderController::class);
+    Route::apiResource('vault-items', VaultItemController::class);
 });
