@@ -268,3 +268,29 @@ button.link {
 button.link.danger {
   color: #ff6b6b;
 }
+
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  color: #8b93a3;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.icon-btn:hover {
+  background: #232834;
+  border-color: #3a4152;
+  color: #e7e9ee;
+}
+
+.icon-btn.danger:hover {
+  color: #ff6b6b;
+  border-color: #5a2a2a;
+}
