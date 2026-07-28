@@ -42,6 +42,7 @@ export default function ActivityLog({ userId }: { userId: number }) {
   const [page, setPage] = useState(1);
   const [result, setResult] = useState<Paginated<AuditLog> | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [collapsed, setCollapsed] = useState(false);
 
   const pageRef = useRef(page);
   pageRef.current = page;
@@ -85,9 +86,17 @@ export default function ActivityLog({ userId }: { userId: number }) {
 
   return (
     <section className="activity">
-      <h2>Recent activity</h2>
+      <button
+        type="button"
+        className="activity-header"
+        onClick={() => setCollapsed((c) => !c)}
+        aria-expanded={!collapsed}
+      >
+        <h2>Recent activity</h2>
+        <span className="collapse-chevron">{collapsed ? '▸' : '▾'}</span>
+      </button>
 
-      {logs.length === 0 ? (
+      {collapsed ? null : logs.length === 0 ? (
         <p className="muted">No activity yet.</p>
       ) : (
         <>
@@ -126,7 +135,7 @@ export default function ActivityLog({ userId }: { userId: number }) {
           )}
         </>
       )}
-      {error && <p className="error">{error}</p>}
+      {!collapsed && error && <p className="error">{error}</p>}
     </section>
   );
 }
