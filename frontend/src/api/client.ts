@@ -92,3 +92,59 @@ export async function deleteFolder(id: number): Promise<void> {
   await ensureCsrf();
   await api.delete(`/folders/${id}`);
 }
+
+export type VaultItemType = 'login' | 'secure_note' | 'card' | 'identity' | 'custom';
+
+export interface VaultItemSummary {
+  id: number;
+  folder_id: number | null;
+  type: VaultItemType;
+  title: string;
+  favorite: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface VaultItemDetail extends VaultItemSummary {
+  data: Record<string, string>;
+}
+
+export interface VaultItemPayload {
+  type: VaultItemType;
+  title: string;
+  data: Record<string, string>;
+  folder_id: number | null;
+  favorite: boolean;
+}
+
+export async function fetchVaultItems(folderId?: number | null): Promise<VaultItemSummary[]> {
+  const { data } = await api.get<VaultItemSummary[]>('/vault-items', {
+    params: folderId != null ? { folder_id: folderId } : {},
+  });
+  return data;
+}
+
+export async function fetchVaultItem(id: number): Promise<VaultItemDetail> {
+  const { data } = await api.get<VaultItemDetail>(`/vault-items/${id}`);
+  return data;
+}
+
+export async function createVaultItem(payload: VaultItemPayload): Promise<VaultItemDetail> {
+  await ensureCsrf();
+  const { data } = await api.post<VaultItemDetail>('/vault-items', payload);
+  return data;
+}
+
+export async function updateVaultItem(
+  id: number,
+  payload: VaultItemPayload,
+): Promise<VaultItemDetail> {
+  await ensureCsrf();
+  const { data } = await api.put<VaultItemDetail>(`/vault-items/${id}`, payload);
+  return data;
+}
+
+export async function deleteVaultItem(id: number): Promise<void> {
+  await ensureCsrf();
+  await api.delete(`/vault-items/${id}`);
+}
