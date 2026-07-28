@@ -79,11 +79,10 @@ export default function VaultItems({ onChange }: Props) {
   const [revealed, setRevealed] = useState<Record<string, boolean>>({});
 
   const [fSearch, setFSearch] = useState('');
-  const [fType, setFType] = useState<VaultItemType | ''>('');
   const [fFav, setFFav] = useState(false);
 
   async function loadItems() {
-    setItems(await fetchVaultItems({ search: fSearch, type: fType, favorite: fFav }));
+    setItems(await fetchVaultItems({ search: fSearch, favorite: fFav }));
   }
 
   async function load() {
@@ -102,7 +101,7 @@ export default function VaultItems({ onChange }: Props) {
     }, 250);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fSearch, fType, fFav]);
+  }, [fSearch, fFav]);
 
   function resetForm() {
     setEditingId(null);
@@ -332,16 +331,10 @@ export default function VaultItems({ onChange }: Props) {
           value={fSearch}
           onChange={(e) => setFSearch(e.target.value)}
         />
-        <select value={fType} onChange={(e) => setFType(e.target.value as VaultItemType | '')}>
-          <option value="">All types</option>
-          {TYPES.map((t) => (
-            <option key={t.value} value={t.value}>
-              {t.label}
-            </option>
-          ))}
-        </select>
-        <label className="checkbox">
-          <input type="checkbox" checked={fFav} onChange={(e) => setFFav(e.target.checked)} />★
+        <label className="switch">
+          <input type="checkbox" checked={fFav} onChange={(e) => setFFav(e.target.checked)} />
+          <span className="slider" />
+          <span className="switch-label">★ Favorites</span>
         </label>
       </div>
 

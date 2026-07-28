@@ -15,6 +15,8 @@ interface Props {
 
 type FolderNode = Folder & { depth: number };
 
+type View = 'list' | 'form';
+
 /** Flatten folders into display order (parents before children) with a depth. */
 function orderByTree(folders: Folder[]): FolderNode[] {
   const byParent = new Map<number | null, Folder[]>();
@@ -37,14 +39,14 @@ function orderByTree(folders: Folder[]): FolderNode[] {
 
 export default function FolderList({ onChange }: Props) {
   const [folders, setFolders] = useState<Folder[]>([]);
-  const [newName, setNewName] = useState('');
-  const [newParentId, setNewParentId] = useState<number | null>(null);
-  const [editingId, setEditingId] = useState<number | null>(null);
-  const [editName, setEditName] = useState('');
-  const [editParentId, setEditParentId] = useState<number | null>(null);
+  const [view, setView] = useState<View>('list');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
+
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [name, setName] = useState('');
+  const [parentId, setParentId] = useState<number | null>(null);
 
   async function load() {
     setFolders(await fetchFolders());
@@ -54,13 +56,35 @@ export default function FolderList({ onChange }: Props) {
     load().catch(() => setError('Failed to load folders.'));
   }, []);
 
-  async function run(action: () => Promise<unknown>) {
+  function openCreate() {
+    setEditingId(null);
+    setName('');
+    setParentId(null);
+    setError(null);
+    setView('form');
+  }
+
+  function openEdit(folder: Folder) {
+    setEditingId(folder.id);
+    setName(folder.name);
+    setParentId(folder.parent_id);
+    setError(null);
+    setView('form');
+  }
+
+  async function save(e: React.FormEvent) {
+    e.preventDefault();
+    const trimmed = name.trim();
+    if (!trimmed) return;
+
     setBusy(true);
     setError(null);
     try {
-      await action();
+      if (editingId) await updateFolder(editingId, trimmed, parentId);
+      else await createFolder(trimmed, parentId);
       await load();
       onChange?.();
+      setView('list');
     } catch (err) {
       const parentError =
         (err as { response?: { data?: { errors?: { parent_id?: string[] } } } })
@@ -71,41 +95,20 @@ export default function FolderList({ onChange }: Props) {
     }
   }
 
-  function handleCreate(e: React.FormEvent) {
-    e.preventDefault();
-    const name = newName.trim();
-    if (!name) return;
-    run(() => createFolder(name, newParentId)).then(() => {
-      setNewName('');
-      setNewParentId(null);
-    });
-  }
-
-  function startEdit(folder: Folder) {
-    setEditingId(folder.id);
-    setEditName(folder.name);
-    setEditParentId(folder.parent_id);
-  }
-
-  function handleRename(e: React.FormEvent) {
-    e.preventDefault();
-    const name = editName.trim();
-    if (!name || editingId === null) return;
-    const id = editingId;
-    run(() => updateFolder(id, name, editParentId)).then(() => setEditingId(null));
-  }
-
-  function handleDelete(folder: Folder) {
+  async function handleDelete(folder: Folder) {
     if (!confirm(`Delete folder “${folder.name}”? Subfolders are deleted too.`)) return;
-    run(() => deleteFolder(folder.id));
+    setBusy(true);
+    setError(null);
+    try {
+      await deleteFolder(folder.id);
+      await load();
+      onChange?.();
+    } catch {
+      setError('Failed to delete.');
+    } finally {
+      setBusy(false);
+    }
   }
-
-  const term = search.trim().toLowerCase();
-  const tree: FolderNode[] = term
-    ? folders
-        .filter((f) => f.name.toLowerCase().includes(term))
-        .map((f) => ({ ...f, depth: 0 }))
-    : orderByTree(folders);
 
   const parentOptions = (excludeId?: number) => (
     <>
@@ -120,9 +123,53 @@ export default function FolderList({ onChange }: Props) {
     </>
   );
 
+  if (view === 'form') {
+    return (
+      <section className="folders">
+        <h2>{editingId ? 'Edit folder' : 'New folder'}</h2>
+        <form onSubmit={save}>
+          <label>
+            Name
+            <input value={name} onChange={(e) => setName(e.target.value)} autoFocus required />
+          </label>
+          <label>
+            Parent
+            <select
+              value={parentId ?? ''}
+              onChange={(e) => setParentId(e.target.value ? Number(e.target.value) : null)}
+            >
+              {parentOptions(editingId ?? undefined)}
+            </select>
+          </label>
+          <div className="form-actions">
+            <button type="submit" disabled={busy || !name.trim()}>
+              {busy ? 'Saving…' : 'Save'}
+            </button>
+            <button type="button" className="secondary" onClick={() => setView('list')}>
+              Cancel
+            </button>
+          </div>
+          {error && <p className="error">{error}</p>}
+        </form>
+      </section>
+    );
+  }
+
+  const term = search.trim().toLowerCase();
+  const tree: FolderNode[] = term
+    ? folders
+        .filter((f) => f.name.toLowerCase().includes(term))
+        .map((f) => ({ ...f, depth: 0 }))
+    : orderByTree(folders);
+
   return (
     <section className="folders">
-      <h2>Folders</h2>
+      <div className="vault-header">
+        <h2>Folders</h2>
+        <button className="small" onClick={openCreate}>
+          + New
+        </button>
+      </div>
 
       <input
         className="folder-search"
@@ -131,79 +178,36 @@ export default function FolderList({ onChange }: Props) {
         onChange={(e) => setSearch(e.target.value)}
       />
 
-      <form className="folder-add" onSubmit={handleCreate}>
-        <input
-          value={newName}
-          onChange={(e) => setNewName(e.target.value)}
-          placeholder="New folder name"
-        />
-        <select
-          value={newParentId ?? ''}
-          onChange={(e) => setNewParentId(e.target.value ? Number(e.target.value) : null)}
-        >
-          {parentOptions()}
-        </select>
-        <button type="submit" disabled={busy || !newName.trim()}>
-          Add
-        </button>
-      </form>
-
       {tree.length === 0 ? (
-        <p className="muted">No folders yet.</p>
+        <p className="muted">No folders found.</p>
       ) : (
         <ul className="folder-items">
           {tree.map((folder) => (
             <li key={folder.id} style={{ marginLeft: `${folder.depth * 18}px` }}>
-              {editingId === folder.id ? (
-                <form className="folder-edit" onSubmit={handleRename}>
-                  <input
-                    value={editName}
-                    onChange={(e) => setEditName(e.target.value)}
-                    autoFocus
-                  />
-                  <select
-                    value={editParentId ?? ''}
-                    onChange={(e) =>
-                      setEditParentId(e.target.value ? Number(e.target.value) : null)
-                    }
-                  >
-                    {parentOptions(folder.id)}
-                  </select>
-                  <button type="submit" disabled={busy}>
-                    Save
-                  </button>
-                  <button type="button" className="link" onClick={() => setEditingId(null)}>
-                    Cancel
-                  </button>
-                </form>
-              ) : (
-                <>
-                  <span className="folder-name">📁 {folder.name}</span>
-                  <span className="folder-actions">
-                    <button
-                      className="icon-btn"
-                      onClick={() => startEdit(folder)}
-                      title="Rename / Move"
-                      aria-label="Rename or move folder"
-                    >
-                      <PencilIcon />
-                    </button>
-                    <button
-                      className="icon-btn danger"
-                      onClick={() => handleDelete(folder)}
-                      title="Delete"
-                      aria-label="Delete folder"
-                    >
-                      <TrashIcon />
-                    </button>
-                  </span>
-                </>
-              )}
+              <span className="folder-name">📁 {folder.name}</span>
+              <span className="row-actions">
+                <button
+                  className="icon-btn"
+                  title="Rename / Move"
+                  aria-label="Rename or move folder"
+                  onClick={() => openEdit(folder)}
+                >
+                  <PencilIcon />
+                </button>
+                <button
+                  className="icon-btn danger"
+                  title="Delete"
+                  aria-label="Delete folder"
+                  onClick={() => handleDelete(folder)}
+                  disabled={busy}
+                >
+                  <TrashIcon />
+                </button>
+              </span>
             </li>
           ))}
         </ul>
       )}
-
       {error && <p className="error">{error}</p>}
     </section>
   );
