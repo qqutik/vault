@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { fetchDashboard, logout, type Dashboard } from './api/client';
 import { loginWithPasskey, registerPasskey } from './auth/passkey';
 import ActivityLog from './features/activity/ActivityLog';
@@ -26,10 +27,13 @@ export default function App() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const location = useLocation();
+  const navigate = useNavigate();
+  const tab: Tab = location.pathname.startsWith('/folders') ? 'folders' : 'items';
+
   const [checking, setChecking] = useState(true);
   const [dashboard, setDashboard] = useState<Dashboard | null>(null);
   const [recoveryCodes, setRecoveryCodes] = useState<string[] | null>(null);
-  const [tab, setTab] = useState<Tab>('items');
 
   // On load, restore an existing session (httpOnly cookie survives reloads).
   useEffect(() => {
@@ -38,6 +42,13 @@ export default function App() {
       .catch(() => undefined)
       .finally(() => setChecking(false));
   }, []);
+
+  // Default authenticated route.
+  useEffect(() => {
+    if (dashboard && location.pathname === '/') {
+      navigate('/items', { replace: true });
+    }
+  }, [dashboard, location.pathname, navigate]);
 
   async function handleRegister(e: React.FormEvent) {
     e.preventDefault();
@@ -122,13 +133,13 @@ export default function App() {
             label="Folders"
             value={dashboard.stats.folders}
             active={tab === 'folders'}
-            onClick={() => setTab('folders')}
+            onClick={() => navigate('/folders')}
           />
           <StatTab
             label="Items"
             value={dashboard.stats.vault_items}
             active={tab === 'items'}
-            onClick={() => setTab('items')}
+            onClick={() => navigate('/items')}
           />
           <Stat label="Passkeys" value={dashboard.stats.passkeys} />
           <Stat label="Favorites" value={dashboard.stats.favorites} />

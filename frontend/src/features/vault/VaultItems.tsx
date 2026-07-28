@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
   createVaultItem,
   deleteVaultItem,
@@ -61,16 +62,15 @@ const TYPE_LABEL: Record<VaultItemType, string> = Object.fromEntries(
   TYPES.map((t) => [t.value, t.label]),
 ) as Record<VaultItemType, string>;
 
-type Overlay = 'none' | 'form' | 'view';
-
 export default function VaultItems({ onChange }: Props) {
+  const location = useLocation();
+  const navigate = useNavigate();
+
   const [items, setItems] = useState<VaultItemSummary[]>([]);
   const [folders, setFolders] = useState<Folder[]>([]);
-  const [overlay, setOverlay] = useState<Overlay>('none');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [editingId, setEditingId] = useState<number | null>(null);
   const [type, setType] = useState<VaultItemType>('login');
   const [title, setTitle] = useState('');
   const [folderId, setFolderId] = useState<number | null>(null);
@@ -82,6 +82,15 @@ export default function VaultItems({ onChange }: Props) {
 
   const [fSearch, setFSearch] = useState('');
 
+  // Derive the active overlay from the URL (the URL is the source of truth).
+  const parts = location.pathname.split('/').filter(Boolean); // e.g. ['items', '5', 'edit']
+  const sub = parts[1];
+  const editMode = parts[2] === 'edit';
+  const routeId = sub && sub !== 'new' ? Number(sub) : null;
+  const overlay: 'none' | 'form' | 'view' =
+    sub === 'new' || (routeId != null && editMode) ? 'form' : routeId != null ? 'view' : 'none';
+  const editingId = routeId != null && editMode ? routeId : null;
+
   async function loadItems() {
     setItems(await fetchVaultItems({ search: fSearch }));
   }
@@ -90,7 +99,6 @@ export default function VaultItems({ onChange }: Props) {
     fetchFolders().then(setFolders).catch(() => setError('Failed to load folders.'));
   }, []);
 
-  // Reload items when filters change (debounced for the search box).
   useEffect(() => {
     const timer = setTimeout(() => {
       loadItems().catch(() => setError('Failed to load items.'));
@@ -99,43 +107,36 @@ export default function VaultItems({ onChange }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fSearch]);
 
-  function openCreate() {
-    setEditingId(null);
-    setType('login');
-    setTitle('');
-    setFolderId(null);
-    setFavorite(false);
-    setFields({});
+  // Populate the form / detail based on the current route.
+  useEffect(() => {
     setError(null);
-    setOverlay('form');
-  }
-
-  async function openEdit(id: number) {
-    setError(null);
-    try {
-      const item = await fetchVaultItem(id);
-      setEditingId(item.id);
-      setType(item.type);
-      setTitle(item.title);
-      setFolderId(item.folder_id);
-      setFavorite(item.favorite);
-      setFields(item.data ?? {});
-      setOverlay('form');
-    } catch {
-      setError('Failed to open item.');
+    if (sub === 'new') {
+      setType('login');
+      setTitle('');
+      setFolderId(null);
+      setFavorite(false);
+      setFields({});
+    } else if (routeId != null && editMode) {
+      fetchVaultItem(routeId)
+        .then((item) => {
+          setType(item.type);
+          setTitle(item.title);
+          setFolderId(item.folder_id);
+          setFavorite(item.favorite);
+          setFields(item.data ?? {});
+        })
+        .catch(() => setError('Failed to open item.'));
+    } else if (routeId != null) {
+      setRevealed({});
+      fetchVaultItem(routeId).then(setDetail).catch(() => setError('Failed to open item.'));
     }
-  }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname]);
 
-  async function openView(id: number) {
-    setError(null);
-    setRevealed({});
-    try {
-      setDetail(await fetchVaultItem(id));
-      setOverlay('view');
-    } catch {
-      setError('Failed to open item.');
-    }
-  }
+  const openCreate = () => navigate('/items/new');
+  const openEdit = (id: number) => navigate(`/items/${id}/edit`);
+  const openView = (id: number) => navigate(`/items/${id}`);
+  const close = () => navigate('/items');
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
@@ -156,7 +157,7 @@ export default function VaultItems({ onChange }: Props) {
       else await createVaultItem(payload);
       await loadItems();
       onChange?.();
-      setOverlay('none');
+      close();
     } catch {
       setError('Something went wrong.');
     } finally {
@@ -193,8 +194,8 @@ export default function VaultItems({ onChange }: Props) {
           value={fSearch}
           onChange={(e) => setFSearch(e.target.value)}
         />
-        <button className="small" onClick={openCreate}>
-          + New
+        <button className="small add-btn" onClick={openCreate} aria-label="New item" title="New item">
+          +
         </button>
       </div>
 
@@ -237,10 +238,7 @@ export default function VaultItems({ onChange }: Props) {
       {overlay === 'none' && error && <p className="error">{error}</p>}
 
       {overlay === 'form' && (
-        <Modal
-          title={editingId ? 'Edit item' : 'New item'}
-          onClose={() => setOverlay('none')}
-        >
+        <Modal title={editingId ? 'Edit item' : 'New item'} onClose={close}>
           <form onSubmit={save}>
             <label>
               Type
@@ -303,7 +301,7 @@ export default function VaultItems({ onChange }: Props) {
               <button type="submit" disabled={busy || !title.trim()}>
                 {busy ? 'Saving…' : 'Save'}
               </button>
-              <button type="button" className="secondary" onClick={() => setOverlay('none')}>
+              <button type="button" className="secondary" onClick={close}>
                 Cancel
               </button>
             </div>
@@ -313,10 +311,7 @@ export default function VaultItems({ onChange }: Props) {
       )}
 
       {overlay === 'view' && detail && (
-        <Modal
-          title={`${detail.favorite ? '★ ' : ''}${detail.title}`}
-          onClose={() => setOverlay('none')}
-        >
+        <Modal title={`${detail.favorite ? '★ ' : ''}${detail.title}`} onClose={close}>
           <p className="muted">{TYPE_LABEL[detail.type]}</p>
 
           <dl className="item-fields">
@@ -349,7 +344,7 @@ export default function VaultItems({ onChange }: Props) {
             <button type="button" onClick={() => openEdit(detail.id)}>
               Edit
             </button>
-            <button type="button" className="secondary" onClick={() => setOverlay('none')}>
+            <button type="button" className="secondary" onClick={close}>
               Close
             </button>
           </div>

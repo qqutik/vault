@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
   createFolder,
   deleteFolder,
@@ -38,15 +39,24 @@ function orderByTree(folders: Folder[]): FolderNode[] {
 }
 
 export default function FolderList({ onChange }: Props) {
+  const location = useLocation();
+  const navigate = useNavigate();
+
   const [folders, setFolders] = useState<Folder[]>([]);
-  const [showForm, setShowForm] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
 
-  const [editingId, setEditingId] = useState<number | null>(null);
   const [name, setName] = useState('');
   const [parentId, setParentId] = useState<number | null>(null);
+
+  // Derive the modal from the URL (the URL is the source of truth).
+  const parts = location.pathname.split('/').filter(Boolean); // e.g. ['folders', '5', 'edit']
+  const sub = parts[1];
+  const editMode = parts[2] === 'edit';
+  const routeId = sub && sub !== 'new' ? Number(sub) : null;
+  const showForm = sub === 'new' || (routeId != null && editMode);
+  const editingId = routeId != null && editMode ? routeId : null;
 
   async function load() {
     setFolders(await fetchFolders());
@@ -56,21 +66,25 @@ export default function FolderList({ onChange }: Props) {
     load().catch(() => setError('Failed to load folders.'));
   }, []);
 
-  function openCreate() {
-    setEditingId(null);
-    setName('');
-    setParentId(null);
+  // Populate the form based on the current route (uses the loaded folder list).
+  useEffect(() => {
     setError(null);
-    setShowForm(true);
-  }
+    if (sub === 'new') {
+      setName('');
+      setParentId(null);
+    } else if (editingId != null) {
+      const folder = folders.find((f) => f.id === editingId);
+      if (folder) {
+        setName(folder.name);
+        setParentId(folder.parent_id);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname, folders]);
 
-  function openEdit(folder: Folder) {
-    setEditingId(folder.id);
-    setName(folder.name);
-    setParentId(folder.parent_id);
-    setError(null);
-    setShowForm(true);
-  }
+  const openCreate = () => navigate('/folders/new');
+  const openEdit = (folder: Folder) => navigate(`/folders/${folder.id}/edit`);
+  const close = () => navigate('/folders');
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
@@ -84,7 +98,7 @@ export default function FolderList({ onChange }: Props) {
       else await createFolder(trimmed, parentId);
       await load();
       onChange?.();
-      setShowForm(false);
+      close();
     } catch (err) {
       const parentError =
         (err as { response?: { data?: { errors?: { parent_id?: string[] } } } })
@@ -134,8 +148,8 @@ export default function FolderList({ onChange }: Props) {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
-        <button className="small" onClick={openCreate}>
-          + New
+        <button className="small add-btn" onClick={openCreate} aria-label="New folder" title="New folder">
+          +
         </button>
       </div>
 
@@ -145,7 +159,9 @@ export default function FolderList({ onChange }: Props) {
         <ul className="folder-items">
           {tree.map((folder) => (
             <li key={folder.id} style={{ marginLeft: `${folder.depth * 18}px` }}>
-              <span className="folder-name">📁 {folder.name}</span>
+              <div className="folder-row">
+                <span className="folder-name">📁 {folder.name}</span>
+              </div>
               <span className="row-actions">
                 <button
                   className="icon-btn"
@@ -172,10 +188,7 @@ export default function FolderList({ onChange }: Props) {
       {!showForm && error && <p className="error">{error}</p>}
 
       {showForm && (
-        <Modal
-          title={editingId ? 'Edit folder' : 'New folder'}
-          onClose={() => setShowForm(false)}
-        >
+        <Modal title={editingId ? 'Edit folder' : 'New folder'} onClose={close}>
           <form onSubmit={save}>
             <label>
               Name
@@ -193,7 +206,7 @@ export default function FolderList({ onChange }: Props) {
               <button type="submit" disabled={busy || !name.trim()}>
                 {busy ? 'Saving…' : 'Save'}
               </button>
-              <button type="button" className="secondary" onClick={() => setShowForm(false)}>
+              <button type="button" className="secondary" onClick={close}>
                 Cancel
               </button>
             </div>
