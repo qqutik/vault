@@ -4,7 +4,10 @@ import { loginWithPasskey, registerPasskey } from './auth/passkey';
 import ActivityLog from './features/activity/ActivityLog';
 import FolderList from './features/folders/FolderList';
 import VaultItems from './features/vault/VaultItems';
+import { LogoutIcon } from './components/icons';
 import './App.css';
+
+type Tab = 'items' | 'folders';
 
 type Mode = 'login' | 'register';
 
@@ -26,6 +29,7 @@ export default function App() {
   const [checking, setChecking] = useState(true);
   const [dashboard, setDashboard] = useState<Dashboard | null>(null);
   const [recoveryCodes, setRecoveryCodes] = useState<string[] | null>(null);
+  const [tab, setTab] = useState<Tab>('items');
 
   // On load, restore an existing session (httpOnly cookie survives reloads).
   useEffect(() => {
@@ -82,10 +86,24 @@ export default function App() {
   }
 
   if (dashboard) {
+    const refresh = () => fetchDashboard().then(setDashboard);
+
     return (
       <main className="card">
-        <h1>🔐 Vault</h1>
-        <p className="muted">Signed in as {dashboard.user.name}</p>
+        <header className="dash-header">
+          <div>
+            <h1>🔐 Vault</h1>
+            <p className="muted">Signed in as {dashboard.user.name}</p>
+          </div>
+          <button
+            className="icon-btn logout"
+            title="Log out"
+            aria-label="Log out"
+            onClick={handleLogout}
+          >
+            <LogoutIcon />
+          </button>
+        </header>
 
         {recoveryCodes && (
           <div className="recovery">
@@ -100,21 +118,29 @@ export default function App() {
         )}
 
         <div className="stats">
-          <Stat label="Folders" value={dashboard.stats.folders} />
-          <Stat label="Items" value={dashboard.stats.vault_items} />
+          <StatTab
+            label="Folders"
+            value={dashboard.stats.folders}
+            active={tab === 'folders'}
+            onClick={() => setTab('folders')}
+          />
+          <StatTab
+            label="Items"
+            value={dashboard.stats.vault_items}
+            active={tab === 'items'}
+            onClick={() => setTab('items')}
+          />
           <Stat label="Passkeys" value={dashboard.stats.passkeys} />
           <Stat label="Favorites" value={dashboard.stats.favorites} />
         </div>
 
-        <VaultItems onChange={() => fetchDashboard().then(setDashboard)} />
-
-        <FolderList onChange={() => fetchDashboard().then(setDashboard)} />
+        {tab === 'items' ? (
+          <VaultItems onChange={refresh} />
+        ) : (
+          <FolderList onChange={refresh} />
+        )}
 
         <ActivityLog />
-
-        <button className="secondary" onClick={handleLogout}>
-          Log out
-        </button>
       </main>
     );
   }
@@ -169,5 +195,24 @@ function Stat({ label, value }: { label: string; value: number }) {
       <span className="stat-value">{value}</span>
       <span className="stat-label">{label}</span>
     </div>
+  );
+}
+
+function StatTab({
+  label,
+  value,
+  active,
+  onClick,
+}: {
+  label: string;
+  value: number;
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button className={`stat stat-tab${active ? ' active' : ''}`} onClick={onClick}>
+      <span className="stat-value">{value}</span>
+      <span className="stat-label">{label}</span>
+    </button>
   );
 }

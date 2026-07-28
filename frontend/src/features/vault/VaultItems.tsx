@@ -11,6 +11,7 @@ import {
   type VaultItemSummary,
   type VaultItemType,
 } from '../../api/client';
+import { PencilIcon, TrashIcon } from '../../components/icons';
 
 interface Props {
   /** Called after any change so the parent can refresh dependent data (stats). */
@@ -357,13 +358,25 @@ export default function VaultItems({ onChange }: Props) {
                 </span>
                 <span className="item-type">{TYPE_LABEL[item.type]}</span>
               </button>
-              <button
-                className="link danger"
-                onClick={() => remove(item.id)}
-                disabled={busy}
-              >
-                Delete
-              </button>
+              <span className="row-actions">
+                <button
+                  className="icon-btn"
+                  title="Edit"
+                  aria-label="Edit item"
+                  onClick={() => openEdit(item.id)}
+                >
+                  <PencilIcon />
+                </button>
+                <button
+                  className="icon-btn danger"
+                  title="Delete"
+                  aria-label="Delete item"
+                  onClick={() => remove(item.id)}
+                  disabled={busy}
+                >
+                  <TrashIcon />
+                </button>
+              </span>
             </li>
           ))}
         </ul>

@@ -131,11 +131,49 @@ button.secondary {
   font-size: 0.85rem;
 }
 
+.dash-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.dash-header h1 {
+  margin-bottom: 0.25rem;
+}
+
+.icon-btn.logout {
+  width: 38px;
+  height: 38px;
+  flex: none;
+}
+
 .stats {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 0.6rem;
   margin-top: 1.25rem;
+}
+
+button.stat-tab {
+  font: inherit;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+button.stat-tab:hover {
+  border-color: #3a4152;
+}
+
+button.stat-tab.active {
+  border-color: #5b7cfa;
+  background: #1a1f2e;
+}
+
+.row-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
 }
 
 .stat {
@@ -328,7 +366,7 @@ button.small {
 
 .vault-items li {
   display: flex;
-  align-items: stretch;
+  align-items: center;
   gap: 0.5rem;
 }
 
