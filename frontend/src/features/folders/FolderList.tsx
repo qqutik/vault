@@ -64,6 +64,7 @@ export default function FolderList({ onChange }: Props) {
   const [editParentId, setEditParentId] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
 
   async function load() {
     setFolders(await fetchFolders());
@@ -119,7 +120,12 @@ export default function FolderList({ onChange }: Props) {
     run(() => deleteFolder(folder.id));
   }
 
-  const tree = orderByTree(folders);
+  const term = search.trim().toLowerCase();
+  const tree: FolderNode[] = term
+    ? folders
+        .filter((f) => f.name.toLowerCase().includes(term))
+        .map((f) => ({ ...f, depth: 0 }))
+    : orderByTree(folders);
 
   const parentOptions = (excludeId?: number) => (
     <>
@@ -137,6 +143,13 @@ export default function FolderList({ onChange }: Props) {
   return (
     <section className="folders">
       <h2>Folders</h2>
+
+      <input
+        className="folder-search"
+        placeholder="Search folders…"
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+      />
 
       <form className="folder-add" onSubmit={handleCreate}>
         <input

@@ -79,6 +79,25 @@ it('returns only the current user recent activity', function () {
 
     $this->getJson('/api/audit-logs')
         ->assertOk()
-        ->assertJsonCount(1)
+        ->assertJsonCount(1, 'data')
         ->assertJsonFragment(['action' => 'login.success']);
+});
+
+it('paginates recent activity 5 per page', function () {
+    $user = User::factory()->create();
+    foreach (range(1, 7) as $i) {
+        AuditLog::create(['user_id' => $user->id, 'action' => 'item.viewed']);
+    }
+
+    Sanctum::actingAs($user);
+
+    $this->getJson('/api/audit-logs')
+        ->assertOk()
+        ->assertJsonCount(5, 'data')
+        ->assertJsonPath('meta.total', 7)
+        ->assertJsonPath('meta.last_page', 2);
+
+    $this->getJson('/api/audit-logs?page=2')
+        ->assertOk()
+        ->assertJsonCount(2, 'data');
 });

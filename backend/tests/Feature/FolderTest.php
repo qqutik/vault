@@ -25,6 +25,19 @@ it('lists only the current user folders', function () {
         ->assertJsonCount(2);
 });
 
+it('searches folders by name', function () {
+    $user = User::factory()->create();
+    Folder::factory()->for($user)->create(['name' => 'Work stuff']);
+    Folder::factory()->for($user)->create(['name' => 'Personal']);
+
+    Sanctum::actingAs($user);
+
+    $this->getJson('/api/folders?search=work')
+        ->assertOk()
+        ->assertJsonCount(1)
+        ->assertJsonFragment(['name' => 'Work stuff']);
+});
+
 it('creates a folder', function () {
     $user = User::factory()->create();
     Sanctum::actingAs($user);

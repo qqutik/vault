@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\DTO\FolderDTO;
+use App\DTO\FolderFilterDTO;
 use App\Models\Folder;
 use App\Models\User;
 use App\Repositories\FolderRepository;
@@ -21,14 +22,15 @@ class FolderService
     ) {}
 
     /**
-     * List a user's folders.
+     * List a user's folders, optionally filtered by name search.
      *
      * @param  User  $user
+     * @param  FolderFilterDTO  $filter
      * @return Collection<int, Folder>
      */
-    public function forUser(User $user): Collection
+    public function forUser(User $user, FolderFilterDTO $filter): Collection
     {
-        return $this->folders->forUser($user);
+        return $this->folders->forUser($user, $filter);
     }
 
     /**

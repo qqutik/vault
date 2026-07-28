@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\DTO\VaultItemDTO;
+use App\DTO\VaultItemFilterDTO;
 use App\Models\User;
 use App\Models\VaultItem;
 use App\Repositories\VaultItemRepository;
@@ -20,15 +21,15 @@ class VaultItemService
     ) {}
 
     /**
-     * List a user's items, optionally scoped to a folder.
+     * List a user's items, applying the given filters.
      *
      * @param  User  $user
-     * @param  int|null  $folderId
+     * @param  VaultItemFilterDTO  $filter
      * @return Collection<int, VaultItem>
      */
-    public function forUser(User $user, ?int $folderId = null): Collection
+    public function forUser(User $user, VaultItemFilterDTO $filter): Collection
     {
-        return $this->items->forUser($user, $folderId);
+        return $this->items->forUser($user, $filter);
     }
 
     /**

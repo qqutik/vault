@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Repositories;
 
 use App\DTO\FolderDTO;
+use App\DTO\FolderFilterDTO;
 use App\Models\Folder;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
@@ -12,14 +13,24 @@ use Illuminate\Database\Eloquent\Collection;
 class FolderRepository
 {
     /**
-     * List a user's folders, ordered by name.
+     * List a user's folders, ordered by name, optionally filtered by name search.
      *
      * @param  User  $user
+     * @param  FolderFilterDTO  $filter
      * @return Collection<int, Folder>
      */
-    public function forUser(User $user): Collection
+    public function forUser(User $user, FolderFilterDTO $filter): Collection
     {
-        return $user->folders()->orderBy('name')->get();
+        return $user->folders()
+            ->when(
+                $filter->getSearch() !== null,
+                fn ($query) => $query->whereRaw(
+                    'LOWER(name) LIKE ?',
+                    ['%'.mb_strtolower((string) $filter->getSearch()).'%'],
+                ),
+            )
+            ->orderBy('name')
+            ->get();
     }
 
     /**

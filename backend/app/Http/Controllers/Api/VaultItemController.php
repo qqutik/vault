@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api;
 
 use App\DTO\VaultItemDTO;
+use App\DTO\VaultItemFilterDTO;
 use App\Enums\AuditAction;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\VaultItem\IndexVaultItemRequest;
 use App\Http\Requests\VaultItem\StoreVaultItemRequest;
 use App\Http\Requests\VaultItem\UpdateVaultItemRequest;
 use App\Http\Resources\VaultItemResource;
@@ -14,7 +16,6 @@ use App\Models\User;
 use App\Models\VaultItem;
 use App\Services\Audit\AuditLogger;
 use App\Services\VaultItemService;
-use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
 
@@ -30,23 +31,21 @@ class VaultItemController extends Controller
     ) {}
 
     /**
-     * List the current user's items (metadata only), optionally by folder.
+     * List the current user's items (metadata only) with search / filters.
      *
-     * @param  Request  $request
+     * @param  IndexVaultItemRequest  $request
      * @return AnonymousResourceCollection
      */
-    public function index(Request $request): AnonymousResourceCollection
+    public function index(IndexVaultItemRequest $request): AnonymousResourceCollection
     {
         $this->authorize('viewAny', VaultItem::class);
 
         /** @var User $user */
         $user = $request->user();
 
-        $folderId = $request->query('folder_id');
+        $filter = VaultItemFilterDTO::fromArray($request->validated());
 
-        return VaultItemResource::collection(
-            $this->items->forUser($user, $folderId !== null ? (int) $folderId : null),
-        );
+        return VaultItemResource::collection($this->items->forUser($user, $filter));
     }
 
     /**

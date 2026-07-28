@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api;
 
 use App\DTO\FolderDTO;
+use App\DTO\FolderFilterDTO;
 use App\Enums\AuditAction;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Folder\IndexFolderRequest;
 use App\Http\Requests\Folder\StoreFolderRequest;
 use App\Http\Requests\Folder\UpdateFolderRequest;
 use App\Http\Resources\FolderResource;
@@ -14,7 +16,6 @@ use App\Models\Folder;
 use App\Models\User;
 use App\Services\Audit\AuditLogger;
 use App\Services\FolderService;
-use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
 
@@ -30,19 +31,21 @@ class FolderController extends Controller
     ) {}
 
     /**
-     * List the current user's folders.
+     * List the current user's folders, optionally filtered by name search.
      *
-     * @param  Request  $request
+     * @param  IndexFolderRequest  $request
      * @return AnonymousResourceCollection
      */
-    public function index(Request $request): AnonymousResourceCollection
+    public function index(IndexFolderRequest $request): AnonymousResourceCollection
     {
         $this->authorize('viewAny', Folder::class);
 
         /** @var User $user */
         $user = $request->user();
 
-        return FolderResource::collection($this->folders->forUser($user));
+        $filter = FolderFilterDTO::fromArray($request->validated());
+
+        return FolderResource::collection($this->folders->forUser($user, $filter));
     }
 
     /**

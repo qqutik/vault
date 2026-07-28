@@ -21,7 +21,7 @@ class AuditLogController extends Controller
     ) {}
 
     /**
-     * List the current user's recent activity.
+     * List the current user's recent activity (paginated, 5 per page).
      *
      * @param  Request  $request
      * @return AnonymousResourceCollection
@@ -31,6 +31,6 @@ class AuditLogController extends Controller
         /** @var User $user */
         $user = $request->user();
 
-        return AuditLogResource::collection($this->auditLogs->forUser($user));
+        return AuditLogResource::collection($this->auditLogs->paginateForUser($user));
     }
 }

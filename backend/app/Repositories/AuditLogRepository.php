@@ -6,19 +6,22 @@ namespace App\Repositories;
 
 use App\Models\AuditLog;
 use App\Models\User;
-use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 class AuditLogRepository
 {
+    /** Default page size for the activity feed. */
+    public const PER_PAGE = 5;
+
     /**
-     * The most recent audit entries for a user.
+     * Paginate a user's most recent audit entries.
      *
      * @param  User  $user
-     * @param  int  $limit
-     * @return Collection<int, AuditLog>
+     * @param  int  $perPage
+     * @return LengthAwarePaginator<int, AuditLog>
      */
-    public function forUser(User $user, int $limit = 50): Collection
+    public function paginateForUser(User $user, int $perPage = self::PER_PAGE): LengthAwarePaginator
     {
-        return $user->auditLogs()->latest()->limit($limit)->get();
+        return $user->auditLogs()->latest()->paginate($perPage);
     }
 }

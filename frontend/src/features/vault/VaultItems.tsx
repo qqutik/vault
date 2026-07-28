@@ -77,15 +77,31 @@ export default function VaultItems({ onChange }: Props) {
   const [detail, setDetail] = useState<VaultItemDetail | null>(null);
   const [revealed, setRevealed] = useState<Record<string, boolean>>({});
 
+  const [fSearch, setFSearch] = useState('');
+  const [fType, setFType] = useState<VaultItemType | ''>('');
+  const [fFav, setFFav] = useState(false);
+
+  async function loadItems() {
+    setItems(await fetchVaultItems({ search: fSearch, type: fType, favorite: fFav }));
+  }
+
   async function load() {
-    const [i, f] = await Promise.all([fetchVaultItems(), fetchFolders()]);
-    setItems(i);
-    setFolders(f);
+    const [, f] = await Promise.all([loadItems(), fetchFolders().then(setFolders)]);
+    return f;
   }
 
   useEffect(() => {
-    load().catch(() => setError('Failed to load items.'));
+    fetchFolders().then(setFolders).catch(() => setError('Failed to load folders.'));
   }, []);
+
+  // Reload items when filters change (debounced for the search box).
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      loadItems().catch(() => setError('Failed to load items.'));
+    }, 250);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fSearch, fType, fFav]);
 
   function resetForm() {
     setEditingId(null);
@@ -309,8 +325,27 @@ export default function VaultItems({ onChange }: Props) {
         </button>
       </div>
 
+      <div className="filters">
+        <input
+          placeholder="Search items…"
+          value={fSearch}
+          onChange={(e) => setFSearch(e.target.value)}
+        />
+        <select value={fType} onChange={(e) => setFType(e.target.value as VaultItemType | '')}>
+          <option value="">All types</option>
+          {TYPES.map((t) => (
+            <option key={t.value} value={t.value}>
+              {t.label}
+            </option>
+          ))}
+        </select>
+        <label className="checkbox">
+          <input type="checkbox" checked={fFav} onChange={(e) => setFFav(e.target.checked)} />★
+        </label>
+      </div>
+
       {items.length === 0 ? (
-        <p className="muted">No items yet.</p>
+        <p className="muted">No items found.</p>
       ) : (
         <ul className="vault-items">
           {items.map((item) => (

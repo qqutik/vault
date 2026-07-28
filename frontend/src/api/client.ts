@@ -117,10 +117,21 @@ export interface VaultItemPayload {
   favorite: boolean;
 }
 
-export async function fetchVaultItems(folderId?: number | null): Promise<VaultItemSummary[]> {
-  const { data } = await api.get<VaultItemSummary[]>('/vault-items', {
-    params: folderId != null ? { folder_id: folderId } : {},
-  });
+export interface VaultItemFilters {
+  search?: string;
+  type?: VaultItemType | '';
+  folder_id?: number | null;
+  favorite?: boolean;
+}
+
+export async function fetchVaultItems(filters: VaultItemFilters = {}): Promise<VaultItemSummary[]> {
+  const params: Record<string, string> = {};
+  if (filters.search) params.search = filters.search;
+  if (filters.type) params.type = filters.type;
+  if (filters.folder_id != null) params.folder_id = String(filters.folder_id);
+  if (filters.favorite) params.favorite = '1';
+
+  const { data } = await api.get<VaultItemSummary[]>('/vault-items', { params });
   return data;
 }
 
@@ -159,7 +170,17 @@ export interface AuditLog {
   created_at: string;
 }
 
-export async function fetchAuditLogs(): Promise<AuditLog[]> {
-  const { data } = await api.get<AuditLog[]>('/audit-logs');
+export interface Paginated<T> {
+  data: T[];
+  meta: {
+    current_page: number;
+    last_page: number;
+    per_page: number;
+    total: number;
+  };
+}
+
+export async function fetchAuditLogs(page = 1): Promise<Paginated<AuditLog>> {
+  const { data } = await api.get<Paginated<AuditLog>>('/audit-logs', { params: { page } });
   return data;
 }

@@ -28,6 +28,33 @@ it('lists only the current user items without secret data', function () {
         ->assertJsonMissingPath('0.data');
 });
 
+it('searches and filters items', function () {
+    $user = User::factory()->create();
+    VaultItem::factory()->for($user)->create(['title' => 'GitHub', 'type' => 'login']);
+    VaultItem::factory()->for($user)->create(['title' => 'Bank card', 'type' => 'card', 'favorite' => true]);
+    VaultItem::factory()->for($user)->create(['title' => 'Notes', 'type' => 'secure_note']);
+
+    Sanctum::actingAs($user);
+
+    // Title search (case-insensitive).
+    $this->getJson('/api/vault-items?search=git')
+        ->assertOk()
+        ->assertJsonCount(1)
+        ->assertJsonFragment(['title' => 'GitHub']);
+
+    // Type filter.
+    $this->getJson('/api/vault-items?type=card')
+        ->assertOk()
+        ->assertJsonCount(1)
+        ->assertJsonFragment(['title' => 'Bank card']);
+
+    // Favorite filter.
+    $this->getJson('/api/vault-items?favorite=1')
+        ->assertOk()
+        ->assertJsonCount(1)
+        ->assertJsonFragment(['title' => 'Bank card']);
+});
+
 it('creates an item and encrypts the payload at rest', function () {
     $user = User::factory()->create();
     Sanctum::actingAs($user);

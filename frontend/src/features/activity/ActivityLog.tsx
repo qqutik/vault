@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { fetchAuditLogs, type AuditLog } from '../../api/client';
+import { fetchAuditLogs, type AuditLog, type Paginated } from '../../api/client';
 
 const ACTION_LABELS: Record<string, string> = {
   'auth.registered': 'Registered',
@@ -38,27 +38,31 @@ function timeAgo(iso: string): string {
 }
 
 export default function ActivityLog() {
-  const [logs, setLogs] = useState<AuditLog[]>([]);
+  const [page, setPage] = useState(1);
+  const [result, setResult] = useState<Paginated<AuditLog> | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  async function load() {
+  async function load(p: number) {
     setError(null);
     try {
-      setLogs(await fetchAuditLogs());
+      setResult(await fetchAuditLogs(p));
     } catch {
       setError('Failed to load activity.');
     }
   }
 
   useEffect(() => {
-    load();
-  }, []);
+    load(page);
+  }, [page]);
+
+  const logs = result?.data ?? [];
+  const meta = result?.meta;
 
   return (
     <section className="activity">
       <div className="activity-header">
         <h2>Recent activity</h2>
-        <button className="small secondary" onClick={load}>
+        <button className="small secondary" onClick={() => load(page)}>
           Refresh
         </button>
       </div>
@@ -66,15 +70,39 @@ export default function ActivityLog() {
       {logs.length === 0 ? (
         <p className="muted">No activity yet.</p>
       ) : (
-        <ul className="activity-items">
-          {logs.map((log) => (
-            <li key={log.id}>
-              <span className="activity-icon">{ACTION_ICONS[log.action] ?? '•'}</span>
-              <span className="activity-label">{ACTION_LABELS[log.action] ?? log.action}</span>
-              <span className="activity-time">{timeAgo(log.created_at)}</span>
-            </li>
-          ))}
-        </ul>
+        <>
+          <ul className="activity-items">
+            {logs.map((log) => (
+              <li key={log.id}>
+                <span className="activity-icon">{ACTION_ICONS[log.action] ?? '•'}</span>
+                <span className="activity-label">{ACTION_LABELS[log.action] ?? log.action}</span>
+                <span className="activity-time">{timeAgo(log.created_at)}</span>
+              </li>
+            ))}
+          </ul>
+
+          {meta && meta.last_page > 1 && (
+            <div className="pager">
+              <button
+                className="small secondary"
+                disabled={meta.current_page <= 1}
+                onClick={() => setPage((p) => p - 1)}
+              >
+                ← Prev
+              </button>
+              <span className="muted">
+                Page {meta.current_page} of {meta.last_page}
+              </span>
+              <button
+                className="small secondary"
+                disabled={meta.current_page >= meta.last_page}
+                onClick={() => setPage((p) => p + 1)}
+              >
+                Next →
+              </button>
+            </div>
+          )}
+        </>
       )}
       {error && <p className="error">{error}</p>}
     </section>

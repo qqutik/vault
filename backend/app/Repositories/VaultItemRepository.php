@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Repositories;
 
 use App\DTO\VaultItemDTO;
+use App\DTO\VaultItemFilterDTO;
 use App\Models\User;
 use App\Models\VaultItem;
 use Illuminate\Database\Eloquent\Collection;
@@ -12,16 +13,34 @@ use Illuminate\Database\Eloquent\Collection;
 class VaultItemRepository
 {
     /**
-     * List a user's items, optionally scoped to a folder.
+     * List a user's items, applying the given filters.
      *
      * @param  User  $user
-     * @param  int|null  $folderId
+     * @param  VaultItemFilterDTO  $filter
      * @return Collection<int, VaultItem>
      */
-    public function forUser(User $user, ?int $folderId = null): Collection
+    public function forUser(User $user, VaultItemFilterDTO $filter): Collection
     {
         return $user->vaultItems()
-            ->when($folderId !== null, fn ($query) => $query->where('folder_id', $folderId))
+            ->when(
+                $filter->getFolderId() !== null,
+                fn ($query) => $query->where('folder_id', $filter->getFolderId()),
+            )
+            ->when(
+                $filter->getType() !== null,
+                fn ($query) => $query->where('type', $filter->getType()),
+            )
+            ->when(
+                $filter->getFavorite() !== null,
+                fn ($query) => $query->where('favorite', $filter->getFavorite()),
+            )
+            ->when(
+                $filter->getSearch() !== null,
+                fn ($query) => $query->whereRaw(
+                    'LOWER(title) LIKE ?',
+                    ['%'.mb_strtolower((string) $filter->getSearch()).'%'],
+                ),
+            )
             ->orderBy('title')
             ->get();
     }
