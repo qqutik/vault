@@ -60,12 +60,7 @@ export default function ActivityLog() {
 
   return (
     <section className="activity">
-      <div className="activity-header">
-        <h2>Recent activity</h2>
-        <button className="small secondary" onClick={() => load(page)}>
-          Refresh
-        </button>
-      </div>
+      <h2>Recent activity</h2>
 
       {logs.length === 0 ? (
         <p className="muted">No activity yet.</p>
@@ -84,21 +79,23 @@ export default function ActivityLog() {
           {meta && meta.last_page > 1 && (
             <div className="pager">
               <button
-                className="small secondary"
+                className="pager-arrow"
+                aria-label="Previous page"
                 disabled={meta.current_page <= 1}
                 onClick={() => setPage((p) => p - 1)}
               >
-                ← Prev
+                ←
               </button>
-              <span className="muted">
+              <span className="pager-info">
                 Page {meta.current_page} of {meta.last_page}
               </span>
               <button
-                className="small secondary"
+                className="pager-arrow"
+                aria-label="Next page"
                 disabled={meta.current_page >= meta.last_page}
                 onClick={() => setPage((p) => p + 1)}
               >
-                Next →
+                →
               </button>
             </div>
           )}

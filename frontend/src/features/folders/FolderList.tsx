@@ -7,6 +7,8 @@ import {
   type Folder,
 } from '../../api/client';
 import { PencilIcon, TrashIcon } from '../../components/icons';
+import Modal from '../../components/Modal';
+import Select, { type SelectOption } from '../../components/Select';
 
 interface Props {
   /** Called after any change so the parent can refresh dependent data (stats). */
@@ -14,8 +16,6 @@ interface Props {
 }
 
 type FolderNode = Folder & { depth: number };
-
-type View = 'list' | 'form';
 
 /** Flatten folders into display order (parents before children) with a depth. */
 function orderByTree(folders: Folder[]): FolderNode[] {
@@ -39,7 +39,7 @@ function orderByTree(folders: Folder[]): FolderNode[] {
 
 export default function FolderList({ onChange }: Props) {
   const [folders, setFolders] = useState<Folder[]>([]);
-  const [view, setView] = useState<View>('list');
+  const [showForm, setShowForm] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
@@ -61,7 +61,7 @@ export default function FolderList({ onChange }: Props) {
     setName('');
     setParentId(null);
     setError(null);
-    setView('form');
+    setShowForm(true);
   }
 
   function openEdit(folder: Folder) {
@@ -69,7 +69,7 @@ export default function FolderList({ onChange }: Props) {
     setName(folder.name);
     setParentId(folder.parent_id);
     setError(null);
-    setView('form');
+    setShowForm(true);
   }
 
   async function save(e: React.FormEvent) {
@@ -84,7 +84,7 @@ export default function FolderList({ onChange }: Props) {
       else await createFolder(trimmed, parentId);
       await load();
       onChange?.();
-      setView('list');
+      setShowForm(false);
     } catch (err) {
       const parentError =
         (err as { response?: { data?: { errors?: { parent_id?: string[] } } } })
@@ -110,50 +110,12 @@ export default function FolderList({ onChange }: Props) {
     }
   }
 
-  const parentOptions = (excludeId?: number) => (
-    <>
-      <option value="">— No parent (root) —</option>
-      {folders
-        .filter((f) => f.id !== excludeId)
-        .map((f) => (
-          <option key={f.id} value={f.id}>
-            {f.name}
-          </option>
-        ))}
-    </>
-  );
-
-  if (view === 'form') {
-    return (
-      <section className="folders">
-        <h2>{editingId ? 'Edit folder' : 'New folder'}</h2>
-        <form onSubmit={save}>
-          <label>
-            Name
-            <input value={name} onChange={(e) => setName(e.target.value)} autoFocus required />
-          </label>
-          <label>
-            Parent
-            <select
-              value={parentId ?? ''}
-              onChange={(e) => setParentId(e.target.value ? Number(e.target.value) : null)}
-            >
-              {parentOptions(editingId ?? undefined)}
-            </select>
-          </label>
-          <div className="form-actions">
-            <button type="submit" disabled={busy || !name.trim()}>
-              {busy ? 'Saving…' : 'Save'}
-            </button>
-            <button type="button" className="secondary" onClick={() => setView('list')}>
-              Cancel
-            </button>
-          </div>
-          {error && <p className="error">{error}</p>}
-        </form>
-      </section>
-    );
-  }
+  const parentOptions = (excludeId?: number): SelectOption[] => [
+    { value: '', label: '— No parent (root) —' },
+    ...folders
+      .filter((f) => f.id !== excludeId)
+      .map((f) => ({ value: String(f.id), label: f.name })),
+  ];
 
   const term = search.trim().toLowerCase();
   const tree: FolderNode[] = term
@@ -164,19 +126,18 @@ export default function FolderList({ onChange }: Props) {
 
   return (
     <section className="folders">
-      <div className="vault-header">
-        <h2>Folders</h2>
+      <h2>Folders</h2>
+
+      <div className="section-controls">
+        <input
+          placeholder="Find your keys..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
         <button className="small" onClick={openCreate}>
           + New
         </button>
       </div>
-
-      <input
-        className="folder-search"
-        placeholder="Search folders…"
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-      />
 
       {tree.length === 0 ? (
         <p className="muted">No folders found.</p>
@@ -208,7 +169,38 @@ export default function FolderList({ onChange }: Props) {
           ))}
         </ul>
       )}
-      {error && <p className="error">{error}</p>}
+      {!showForm && error && <p className="error">{error}</p>}
+
+      {showForm && (
+        <Modal
+          title={editingId ? 'Edit folder' : 'New folder'}
+          onClose={() => setShowForm(false)}
+        >
+          <form onSubmit={save}>
+            <label>
+              Name
+              <input value={name} onChange={(e) => setName(e.target.value)} autoFocus required />
+            </label>
+            <label>
+              Parent
+              <Select
+                value={parentId != null ? String(parentId) : ''}
+                options={parentOptions(editingId ?? undefined)}
+                onChange={(v) => setParentId(v ? Number(v) : null)}
+              />
+            </label>
+            <div className="form-actions">
+              <button type="submit" disabled={busy || !name.trim()}>
+                {busy ? 'Saving…' : 'Save'}
+              </button>
+              <button type="button" className="secondary" onClick={() => setShowForm(false)}>
+                Cancel
+              </button>
+            </div>
+            {error && <p className="error">{error}</p>}
+          </form>
+        </Modal>
+      )}
     </section>
   );
 }

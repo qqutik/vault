@@ -12,6 +12,8 @@ import {
   type VaultItemType,
 } from '../../api/client';
 import { PencilIcon, TrashIcon } from '../../components/icons';
+import Modal from '../../components/Modal';
+import Select, { type SelectOption } from '../../components/Select';
 
 interface Props {
   /** Called after any change so the parent can refresh dependent data (stats). */
@@ -59,12 +61,12 @@ const TYPE_LABEL: Record<VaultItemType, string> = Object.fromEntries(
   TYPES.map((t) => [t.value, t.label]),
 ) as Record<VaultItemType, string>;
 
-type View = 'list' | 'form' | 'view';
+type Overlay = 'none' | 'form' | 'view';
 
 export default function VaultItems({ onChange }: Props) {
   const [items, setItems] = useState<VaultItemSummary[]>([]);
   const [folders, setFolders] = useState<Folder[]>([]);
-  const [view, setView] = useState<View>('list');
+  const [overlay, setOverlay] = useState<Overlay>('none');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -79,15 +81,9 @@ export default function VaultItems({ onChange }: Props) {
   const [revealed, setRevealed] = useState<Record<string, boolean>>({});
 
   const [fSearch, setFSearch] = useState('');
-  const [fFav, setFFav] = useState(false);
 
   async function loadItems() {
-    setItems(await fetchVaultItems({ search: fSearch, favorite: fFav }));
-  }
-
-  async function load() {
-    const [, f] = await Promise.all([loadItems(), fetchFolders().then(setFolders)]);
-    return f;
+    setItems(await fetchVaultItems({ search: fSearch }));
   }
 
   useEffect(() => {
@@ -101,21 +97,17 @@ export default function VaultItems({ onChange }: Props) {
     }, 250);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fSearch, fFav]);
+  }, [fSearch]);
 
-  function resetForm() {
+  function openCreate() {
     setEditingId(null);
     setType('login');
     setTitle('');
     setFolderId(null);
     setFavorite(false);
     setFields({});
-  }
-
-  function openCreate() {
-    resetForm();
     setError(null);
-    setView('form');
+    setOverlay('form');
   }
 
   async function openEdit(id: number) {
@@ -128,7 +120,7 @@ export default function VaultItems({ onChange }: Props) {
       setFolderId(item.folder_id);
       setFavorite(item.favorite);
       setFields(item.data ?? {});
-      setView('form');
+      setOverlay('form');
     } catch {
       setError('Failed to open item.');
     }
@@ -139,7 +131,7 @@ export default function VaultItems({ onChange }: Props) {
     setRevealed({});
     try {
       setDetail(await fetchVaultItem(id));
-      setView('view');
+      setOverlay('view');
     } catch {
       setError('Failed to open item.');
     }
@@ -162,9 +154,9 @@ export default function VaultItems({ onChange }: Props) {
     try {
       if (editingId) await updateVaultItem(editingId, payload);
       else await createVaultItem(payload);
-      await load();
+      await loadItems();
       onChange?.();
-      setView('list');
+      setOverlay('none');
     } catch {
       setError('Something went wrong.');
     } finally {
@@ -177,9 +169,8 @@ export default function VaultItems({ onChange }: Props) {
     setBusy(true);
     try {
       await deleteVaultItem(id);
-      await load();
+      await loadItems();
       onChange?.();
-      setView('list');
     } catch {
       setError('Failed to delete.');
     } finally {
@@ -187,155 +178,24 @@ export default function VaultItems({ onChange }: Props) {
     }
   }
 
-  if (view === 'form') {
-    return (
-      <section className="vault">
-        <h2>{editingId ? 'Edit item' : 'New item'}</h2>
-        <form onSubmit={save}>
-          <label>
-            Type
-            <select value={type} onChange={(e) => setType(e.target.value as VaultItemType)}>
-              {TYPES.map((t) => (
-                <option key={t.value} value={t.value}>
-                  {t.label}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label>
-            Title
-            <input value={title} onChange={(e) => setTitle(e.target.value)} required />
-          </label>
-
-          {SCHEMAS[type].map((spec) =>
-            spec.textarea ? (
-              <label key={spec.key}>
-                {spec.label}
-                <textarea
-                  value={fields[spec.key] ?? ''}
-                  onChange={(e) => setFields({ ...fields, [spec.key]: e.target.value })}
-                  rows={3}
-                />
-              </label>
-            ) : (
-              <label key={spec.key}>
-                {spec.label}
-                <input
-                  type={spec.secret ? 'password' : 'text'}
-                  value={fields[spec.key] ?? ''}
-                  onChange={(e) => setFields({ ...fields, [spec.key]: e.target.value })}
-                />
-              </label>
-            ),
-          )}
-
-          <label>
-            Folder
-            <select
-              value={folderId ?? ''}
-              onChange={(e) => setFolderId(e.target.value ? Number(e.target.value) : null)}
-            >
-              <option value="">— No folder —</option>
-              {folders.map((f) => (
-                <option key={f.id} value={f.id}>
-                  {f.name}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label className="checkbox">
-            <input
-              type="checkbox"
-              checked={favorite}
-              onChange={(e) => setFavorite(e.target.checked)}
-            />
-            Favorite
-          </label>
-
-          <div className="form-actions">
-            <button type="submit" disabled={busy || !title.trim()}>
-              {busy ? 'Saving…' : 'Save'}
-            </button>
-            <button type="button" className="secondary" onClick={() => setView('list')}>
-              Cancel
-            </button>
-          </div>
-          {error && <p className="error">{error}</p>}
-        </form>
-      </section>
-    );
-  }
-
-  if (view === 'view' && detail) {
-    return (
-      <section className="vault">
-        <h2>
-          {detail.favorite ? '★ ' : ''}
-          {detail.title}
-        </h2>
-        <p className="muted">{TYPE_LABEL[detail.type]}</p>
-
-        <dl className="item-fields">
-          {SCHEMAS[detail.type]
-            .filter((spec) => detail.data[spec.key])
-            .map((spec) => (
-              <div key={spec.key}>
-                <dt>{spec.label}</dt>
-                <dd>
-                  {spec.secret && !revealed[spec.key] ? (
-                    <>
-                      <span className="mono">••••••••</span>
-                      <button
-                        type="button"
-                        className="link"
-                        onClick={() => setRevealed({ ...revealed, [spec.key]: true })}
-                      >
-                        Reveal
-                      </button>
-                    </>
-                  ) : (
-                    <span className="mono">{detail.data[spec.key]}</span>
-                  )}
-                </dd>
-              </div>
-            ))}
-        </dl>
-
-        <div className="form-actions">
-          <button type="button" onClick={() => openEdit(detail.id)}>
-            Edit
-          </button>
-          <button type="button" className="secondary" onClick={() => setView('list')}>
-            Back
-          </button>
-        </div>
-        {error && <p className="error">{error}</p>}
-      </section>
-    );
-  }
+  const folderOptions: SelectOption[] = [
+    { value: '', label: '— No folder —' },
+    ...folders.map((f) => ({ value: String(f.id), label: f.name })),
+  ];
 
   return (
     <section className="vault">
-      <div className="vault-header">
-        <h2>Items</h2>
-        <button className="small" onClick={openCreate}>
-          + New
-        </button>
-      </div>
+      <h2>Items</h2>
 
-      <div className="filters">
+      <div className="section-controls">
         <input
-          placeholder="Search items…"
+          placeholder="Find your keys..."
           value={fSearch}
           onChange={(e) => setFSearch(e.target.value)}
         />
-        <label className="switch">
-          <input type="checkbox" checked={fFav} onChange={(e) => setFFav(e.target.checked)} />
-          <span className="slider" />
-          <span className="switch-label">★ Favorites</span>
-        </label>
+        <button className="small" onClick={openCreate}>
+          + New
+        </button>
       </div>
 
       {items.length === 0 ? (
@@ -374,7 +234,127 @@ export default function VaultItems({ onChange }: Props) {
           ))}
         </ul>
       )}
-      {error && <p className="error">{error}</p>}
+      {overlay === 'none' && error && <p className="error">{error}</p>}
+
+      {overlay === 'form' && (
+        <Modal
+          title={editingId ? 'Edit item' : 'New item'}
+          onClose={() => setOverlay('none')}
+        >
+          <form onSubmit={save}>
+            <label>
+              Type
+              <Select
+                value={type}
+                options={TYPES.map((t) => ({ value: t.value, label: t.label }))}
+                onChange={(v) => setType(v as VaultItemType)}
+              />
+            </label>
+
+            <label>
+              Title
+              <input value={title} onChange={(e) => setTitle(e.target.value)} required />
+            </label>
+
+            {SCHEMAS[type].map((spec) =>
+              spec.textarea ? (
+                <label key={spec.key}>
+                  {spec.label}
+                  <textarea
+                    value={fields[spec.key] ?? ''}
+                    onChange={(e) => setFields({ ...fields, [spec.key]: e.target.value })}
+                    rows={3}
+                  />
+                </label>
+              ) : (
+                <label key={spec.key}>
+                  {spec.label}
+                  <input
+                    type={spec.secret ? 'password' : 'text'}
+                    value={fields[spec.key] ?? ''}
+                    onChange={(e) => setFields({ ...fields, [spec.key]: e.target.value })}
+                  />
+                </label>
+              ),
+            )}
+
+            <label>
+              Folder
+              <Select
+                value={folderId != null ? String(folderId) : ''}
+                options={folderOptions}
+                onChange={(v) => setFolderId(v ? Number(v) : null)}
+              />
+            </label>
+
+            <div className="field">
+              <span>Favorite</span>
+              <label className="switch">
+                <input
+                  type="checkbox"
+                  checked={favorite}
+                  onChange={(e) => setFavorite(e.target.checked)}
+                />
+                <span className="slider" />
+              </label>
+            </div>
+
+            <div className="form-actions">
+              <button type="submit" disabled={busy || !title.trim()}>
+                {busy ? 'Saving…' : 'Save'}
+              </button>
+              <button type="button" className="secondary" onClick={() => setOverlay('none')}>
+                Cancel
+              </button>
+            </div>
+            {error && <p className="error">{error}</p>}
+          </form>
+        </Modal>
+      )}
+
+      {overlay === 'view' && detail && (
+        <Modal
+          title={`${detail.favorite ? '★ ' : ''}${detail.title}`}
+          onClose={() => setOverlay('none')}
+        >
+          <p className="muted">{TYPE_LABEL[detail.type]}</p>
+
+          <dl className="item-fields">
+            {SCHEMAS[detail.type]
+              .filter((spec) => detail.data[spec.key])
+              .map((spec) => (
+                <div key={spec.key}>
+                  <dt>{spec.label}</dt>
+                  <dd>
+                    {spec.secret && !revealed[spec.key] ? (
+                      <>
+                        <span className="mono">••••••••</span>
+                        <button
+                          type="button"
+                          className="link"
+                          onClick={() => setRevealed({ ...revealed, [spec.key]: true })}
+                        >
+                          Reveal
+                        </button>
+                      </>
+                    ) : (
+                      <span className="mono">{detail.data[spec.key]}</span>
+                    )}
+                  </dd>
+                </div>
+              ))}
+          </dl>
+
+          <div className="form-actions">
+            <button type="button" onClick={() => openEdit(detail.id)}>
+              Edit
+            </button>
+            <button type="button" className="secondary" onClick={() => setOverlay('none')}>
+              Close
+            </button>
+          </div>
+        </Modal>
+      )}
     </section>
   );
 }
