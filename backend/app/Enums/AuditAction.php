@@ -13,6 +13,8 @@ enum AuditAction: string
     case PasskeyAdded = 'passkey.added';
     case PasskeyRemoved = 'passkey.removed';
 
+    case SessionRevoked = 'session.revoked';
+
     case ItemViewed = 'item.viewed';
     case ItemUnlocked = 'item.unlocked';
     case ItemCreated = 'item.created';

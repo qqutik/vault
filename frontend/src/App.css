@@ -553,7 +553,8 @@ button.small {
 
 .item-created {
   font-size: 0.8rem;
-  margin: 0.5rem 0 0;
+  margin: 1.25rem 0 1rem;
+  text-align: right;
 }
 
 .crumbs {
@@ -603,10 +604,19 @@ button.small {
   flex-shrink: 0;
 }
 
-.passkeys {
+.passkeys,
+.sessions {
   margin-top: 1.5rem;
   border-top: 1px solid #262b36;
   padding-top: 1.25rem;
+}
+
+.session-current {
+  font-size: 0.72rem;
+  color: #8b93a3;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
 }
 
 .passkeys-hint {
@@ -712,6 +722,59 @@ button.small {
   display: flex;
   align-items: center;
   gap: 0.75rem;
+}
+
+.item-fields .copy-btn {
+  margin-left: auto;
+  flex: none;
+  width: 28px;
+  height: 28px;
+}
+
+/* Password field with generator + strength meter */
+.pw-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.pw-row input {
+  flex: 1;
+  min-width: 0;
+}
+
+.pw-action {
+  flex: none;
+  width: 38px;
+  height: 38px;
+}
+
+.pw-meter {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 0.4rem;
+}
+
+.pw-bar {
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+  background: #2a303c;
+  overflow: hidden;
+}
+
+.pw-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.2s ease, background 0.2s ease;
+}
+
+.pw-strength {
+  font-size: 0.75rem;
+  font-weight: 600;
+  min-width: 3.5rem;
+  text-align: right;
 }
 
 .mono {
@@ -909,6 +972,35 @@ button.small.secondary {
 
 .modal-header h2 {
   margin: 0;
+}
+
+.modal-header-extra {
+  margin-left: auto;
+  margin-right: 0.75rem;
+  font-size: 0.85rem;
+}
+
+.modal-header.bare {
+  justify-content: flex-end;
+  margin-bottom: 0.25rem;
+}
+
+.view-head {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  margin-bottom: 1rem;
+}
+
+.view-title {
+  margin: 0;
+}
+
+.view-type {
+  font-size: 0.72rem;
+  color: #8b93a3;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 /* Custom select */

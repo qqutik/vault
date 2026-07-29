@@ -16,6 +16,8 @@ import {
   type VaultItemType,
 } from '../../api/client';
 import {
+  CheckIcon,
+  CopyIcon,
   FolderIcon,
   FolderPlusIcon,
   KeyIcon,
@@ -25,6 +27,7 @@ import {
   TrashIcon,
 } from '../../components/icons';
 import { unlockVaultItem } from '../../auth/passkey';
+import PasswordField from './PasswordField';
 import Modal from '../../components/Modal';
 import Select, { type SelectOption } from '../../components/Select';
 
@@ -38,6 +41,7 @@ interface FieldSpec {
   label: string;
   secret?: boolean;
   textarea?: boolean;
+  generate?: boolean;
 }
 
 const TYPES: { value: VaultItemType; label: string }[] = [
@@ -51,7 +55,7 @@ const TYPES: { value: VaultItemType; label: string }[] = [
 const SCHEMAS: Record<VaultItemType, FieldSpec[]> = {
   login: [
     { key: 'username', label: 'Username' },
-    { key: 'password', label: 'Password', secret: true },
+    { key: 'password', label: 'Password', secret: true, generate: true },
     { key: 'url', label: 'URL' },
     { key: 'notes', label: 'Notes', textarea: true },
   ],
@@ -94,6 +98,7 @@ export default function VaultBrowser({ onChange }: Props) {
   // Item view state.
   const [detail, setDetail] = useState<VaultItemDetail | null>(null);
   const [revealed, setRevealed] = useState<Record<string, boolean>>({});
+  const [copied, setCopied] = useState<string | null>(null);
 
   // Folder form state.
   const [folderName, setFolderName] = useState('');
@@ -338,6 +343,16 @@ export default function VaultBrowser({ onChange }: Props) {
     }
   }
 
+  async function copyField(key: string, value: string) {
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopied(key);
+      window.setTimeout(() => setCopied((c) => (c === key ? null : c)), 1200);
+    } catch {
+      // Clipboard may be unavailable (e.g. insecure context) — fail silently.
+    }
+  }
+
   async function removeFolder(folder: Folder) {
     if (!confirm(`Delete folder “${folder.name}”? Subfolders and their items go too.`)) return;
     setBusy(true);
@@ -494,7 +509,7 @@ export default function VaultBrowser({ onChange }: Props) {
 
       {/* Item create / edit */}
       {itemForm != null && (
-        <Modal title={editingItemId ? 'Edit item' : 'New item'} onClose={closeOverlay}>
+        <Modal title={editingItemId ? 'Edit vault' : 'New vault'} onClose={closeOverlay}>
           <form onSubmit={saveItem}>
             <label>
               Type
@@ -520,7 +535,14 @@ export default function VaultBrowser({ onChange }: Props) {
             </label>
 
             {SCHEMAS[type].map((spec) =>
-              spec.textarea ? (
+              spec.generate ? (
+                <PasswordField
+                  key={spec.key}
+                  label={spec.label}
+                  value={fields[spec.key] ?? ''}
+                  onChange={(v) => setFields({ ...fields, [spec.key]: v })}
+                />
+              ) : spec.textarea ? (
                 <label key={spec.key}>
                   {spec.label}
                   <textarea
@@ -580,8 +602,11 @@ export default function VaultBrowser({ onChange }: Props) {
 
       {/* Item view */}
       {viewId != null && detail && (
-        <Modal title={detail.title} onClose={closeOverlay}>
-          <p className="muted">{TYPE_LABEL[detail.type]}</p>
+        <Modal title={detail.title} onClose={closeOverlay} bareHeader>
+          <div className="view-head">
+            <span className="view-type">{TYPE_LABEL[detail.type]}</span>
+            <h2 className="view-title">{detail.title}</h2>
+          </div>
 
           <dl className="item-fields">
             {SCHEMAS[detail.type]
@@ -604,6 +629,15 @@ export default function VaultBrowser({ onChange }: Props) {
                     ) : (
                       <span className="mono">{detail.data[spec.key]}</span>
                     )}
+                    <button
+                      type="button"
+                      className="icon-btn copy-btn"
+                      title={copied === spec.key ? 'Copied' : 'Copy'}
+                      aria-label={`Copy ${spec.label}`}
+                      onClick={() => copyField(spec.key, detail.data[spec.key])}
+                    >
+                      {copied === spec.key ? <CheckIcon size={15} /> : <CopyIcon size={15} />}
+                    </button>
                   </dd>
                 </div>
               ))}

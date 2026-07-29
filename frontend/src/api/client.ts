@@ -180,6 +180,31 @@ export async function deletePasskey(id: string): Promise<Passkey[]> {
   return data.passkeys;
 }
 
+export interface SessionInfo {
+  id: string;
+  ip: string | null;
+  device: string;
+  last_active: string;
+  current: boolean;
+}
+
+export async function fetchSessions(): Promise<SessionInfo[]> {
+  const { data } = await api.get<SessionInfo[]>('/sessions');
+  return data;
+}
+
+export async function revokeSession(id: string): Promise<SessionInfo[]> {
+  await ensureCsrf();
+  const { data } = await api.delete<SessionInfo[]>(`/sessions/${id}`);
+  return data;
+}
+
+export async function revokeOtherSessions(): Promise<SessionInfo[]> {
+  await ensureCsrf();
+  const { data } = await api.post<SessionInfo[]>('/sessions/revoke-others');
+  return data;
+}
+
 export interface AuditLog {
   id: number;
   action: string;

@@ -5,6 +5,7 @@ import { loginWithPasskey, registerPasskey } from './auth/passkey';
 import ActivityLog from './features/activity/ActivityLog';
 import VaultBrowser from './features/vault/VaultBrowser';
 import PasskeyManager from './features/passkeys/PasskeyManager';
+import SessionManager from './features/sessions/SessionManager';
 import { LogoutIcon } from './components/icons';
 import './App.css';
 
@@ -153,7 +154,10 @@ export default function App() {
         </div>
 
         {tab === 'passkeys' ? (
-          <PasskeyManager onChange={refresh} />
+          <>
+            <PasskeyManager onChange={refresh} />
+            <SessionManager />
+          </>
         ) : (
           <VaultBrowser onChange={refresh} />
         )}

@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\Auth\RegisterController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\FolderController;
 use App\Http\Controllers\Api\PasskeyController;
+use App\Http\Controllers\Api\SessionController;
 use App\Http\Controllers\Api\VaultItemController;
 use App\Http\Resources\UserResource;
 use Illuminate\Http\JsonResponse;
@@ -62,6 +63,11 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::post('/passkeys/options', [PasskeyController::class, 'options']);
     Route::post('/passkeys/verify', [PasskeyController::class, 'verify']);
     Route::delete('/passkeys', [PasskeyController::class, 'destroy']);
+
+    // Active login sessions — list and revoke.
+    Route::get('/sessions', [SessionController::class, 'index']);
+    Route::post('/sessions/revoke-others', [SessionController::class, 'destroyOthers']);
+    Route::delete('/sessions/{id}', [SessionController::class, 'destroy']);
 
     Route::get('/audit-logs', [AuditLogController::class, 'index']);
 });
