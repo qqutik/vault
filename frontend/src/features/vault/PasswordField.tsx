@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { EyeIcon, EyeOffIcon, RefreshIcon } from '../../components/icons';
+import { checkPwnedPassword } from '../../lib/hibp';
 
 interface Props {
   label: string;
@@ -64,9 +65,30 @@ function estimateStrength(pw: string): Strength {
   return { level, ...LEVELS[level] };
 }
 
+type Breach =
+  | { status: 'idle' }
+  | { status: 'checking' }
+  | { status: 'done'; count: number }
+  | { status: 'error' };
+
 export default function PasswordField({ label, value, onChange }: Props) {
   const [reveal, setReveal] = useState(false);
+  const [breach, setBreach] = useState<Breach>({ status: 'idle' });
   const strength = estimateStrength(value);
+
+  // A stale breach result must not linger once the password changes.
+  useEffect(() => {
+    setBreach({ status: 'idle' });
+  }, [value]);
+
+  async function check() {
+    setBreach({ status: 'checking' });
+    try {
+      setBreach({ status: 'done', count: await checkPwnedPassword(value) });
+    } catch {
+      setBreach({ status: 'error' });
+    }
+  }
 
   return (
     <label className="pw-field">
@@ -111,6 +133,31 @@ export default function PasswordField({ label, value, onChange }: Props) {
           <span className="pw-strength" style={{ color: strength.color }}>
             {strength.label}
           </span>
+        </div>
+      )}
+
+      {value && (
+        <div className="pw-check">
+          <button
+            type="button"
+            className="link"
+            onClick={check}
+            disabled={breach.status === 'checking'}
+          >
+            {breach.status === 'checking' ? 'Checking…' : 'Check password'}
+          </button>
+
+          {breach.status === 'done' &&
+            (breach.count > 0 ? (
+              <span className="pw-breached">
+                ⚠ Found in {breach.count.toLocaleString()} breaches — choose another
+              </span>
+            ) : (
+              <span className="pw-safe">✓ Not found in known breaches</span>
+            ))}
+          {breach.status === 'error' && (
+            <span className="pw-check-muted">Couldn’t check right now</span>
+          )}
         </div>
       )}
     </label>

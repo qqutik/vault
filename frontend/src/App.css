@@ -777,6 +777,26 @@ button.small {
   text-align: right;
 }
 
+.pw-check {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+  font-size: 0.8rem;
+}
+
+.pw-breached {
+  color: #ff6b6b;
+}
+
+.pw-safe {
+  color: #4ccf7f;
+}
+
+.pw-check-muted {
+  color: #8b93a3;
+}
+
 .mono {
   font-family: ui-monospace, 'SF Mono', Menlo, monospace;
   word-break: break-all;

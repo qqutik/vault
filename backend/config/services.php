@@ -35,4 +35,8 @@ return [
         ],
     ],
 
+    'pwned_passwords' => [
+        'base_url' => env('HIBP_BASE_URL', 'https://api.pwnedpasswords.com'),
+    ],
+
 ];

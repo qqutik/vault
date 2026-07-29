@@ -180,6 +180,17 @@ export async function deletePasskey(id: string): Promise<Passkey[]> {
   return data.passkeys;
 }
 
+/**
+ * Breach-check a password by its SHA-1 prefix/suffix (k-anonymity). The plain
+ * password is never sent — the browser hashes it and passes only the hash parts;
+ * the backend forwards only the prefix to Have I Been Pwned.
+ */
+export async function fetchBreachCount(prefix: string, suffix: string): Promise<number> {
+  await ensureCsrf();
+  const { data } = await api.post<{ count: number }>('/pwned-passwords/check', { prefix, suffix });
+  return data.count;
+}
+
 export interface SessionInfo {
   id: string;
   ip: string | null;

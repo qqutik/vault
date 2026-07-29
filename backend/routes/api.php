@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\Auth\RegisterController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\FolderController;
 use App\Http\Controllers\Api\PasskeyController;
+use App\Http\Controllers\Api\PwnedPasswordController;
 use App\Http\Controllers\Api\SessionController;
 use App\Http\Controllers\Api\VaultItemController;
 use App\Http\Resources\UserResource;
@@ -63,6 +64,9 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::post('/passkeys/options', [PasskeyController::class, 'options']);
     Route::post('/passkeys/verify', [PasskeyController::class, 'verify']);
     Route::delete('/passkeys', [PasskeyController::class, 'destroy']);
+
+    // Breach-check a password (Have I Been Pwned, k-anonymity — hash prefix only).
+    Route::post('/pwned-passwords/check', [PwnedPasswordController::class, 'check']);
 
     // Active login sessions — list and revoke.
     Route::get('/sessions', [SessionController::class, 'index']);
