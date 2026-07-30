@@ -55,6 +55,9 @@ Route::middleware('auth:sanctum')->group(function (): void {
 
     Route::apiResource('folders', FolderController::class);
 
+    // Bulk encrypted blobs for client-side password-health analysis (not audited).
+    Route::get('vault-items/health', [VaultItemController::class, 'health']);
+
     // Step-up: unlock an item that requires a fresh passkey before revealing it.
     Route::post('vault-items/{vaultItem}/unlock/options', [VaultItemController::class, 'unlockOptions']);
     Route::post('vault-items/{vaultItem}/unlock', [VaultItemController::class, 'unlock']);

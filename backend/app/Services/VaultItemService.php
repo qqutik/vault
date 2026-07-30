@@ -33,6 +33,18 @@ class VaultItemService
     }
 
     /**
+     * Login items (with encrypted `data`) for client-side password-health
+     * analysis. Excludes step-up items.
+     *
+     * @param  User  $user
+     * @return Collection<int, VaultItem>
+     */
+    public function healthDataFor(User $user): Collection
+    {
+        return $this->items->healthDataFor($user);
+    }
+
+    /**
      * Create a new item for the user.
      *
      * @param  User  $user

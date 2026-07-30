@@ -46,6 +46,23 @@ class VaultItemRepository
     }
 
     /**
+     * Login items (with their encrypted `data`) eligible for password-health
+     * analysis: the user's own, non-step-up items. Protected (`require_reauth`)
+     * items are excluded — they only open via a fresh passkey assertion.
+     *
+     * @param  User  $user
+     * @return Collection<int, VaultItem>
+     */
+    public function healthDataFor(User $user): Collection
+    {
+        return $user->vaultItems()
+            ->where('type', 'login')
+            ->where('require_reauth', false)
+            ->orderBy('title')
+            ->get();
+    }
+
+    /**
      * Create an item for the user from the given DTO.
      *
      * @param  User  $user

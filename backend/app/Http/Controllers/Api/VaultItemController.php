@@ -54,6 +54,28 @@ class VaultItemController extends Controller
     }
 
     /**
+     * Bulk-return the user's login items with their encrypted `data` blob for
+     * client-side password-health analysis. The server never sees plaintext
+     * (the blob is opaque under zero-knowledge), so this is not an item "view"
+     * and is intentionally not audited.
+     *
+     * @param  Request  $request
+     * @return AnonymousResourceCollection
+     */
+    public function health(Request $request): AnonymousResourceCollection
+    {
+        $this->authorize('viewAny', VaultItem::class);
+
+        /** @var User $user */
+        $user = $request->user();
+
+        $collection = VaultItemResource::collection($this->items->healthDataFor($user));
+        $collection->collection->each(fn (VaultItemResource $resource) => $resource->withData());
+
+        return $collection;
+    }
+
+    /**
      * Create a new item.
      *
      * @param  StoreVaultItemRequest  $request

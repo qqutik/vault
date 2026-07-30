@@ -559,7 +559,7 @@ export default function VaultBrowser({ onChange }: Props) {
                 >
                   <span className="folder-name">
                     <FolderIcon size={18} />
-                    {folder.name}
+                    <span className="trunc">{folder.name}</span>
                   </span>
                   <span className="crumb-sep">▸</span>
                 </button>
@@ -597,7 +597,7 @@ export default function VaultBrowser({ onChange }: Props) {
                   <span className="item-icon">
                     <KeyIcon size={17} />
                   </span>
-                  {item.title}
+                  <span className="trunc">{item.title}</span>
                 </span>
                 <span className="item-meta">
                   {item.require_reauth && (

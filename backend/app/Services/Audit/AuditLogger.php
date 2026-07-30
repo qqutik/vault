@@ -40,6 +40,7 @@ class AuditLogger
             auditableId: $auditable?->getKey() !== null ? (int) $auditable->getKey() : null,
             ip: $this->request->ip(),
             userAgent: mb_substr((string) $this->request->userAgent(), 0, 255),
+            occurredAt: now()->toDateTimeString(),
         );
 
         RecordAuditLog::dispatch($entry);

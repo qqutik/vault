@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { EyeIcon, EyeOffIcon, RefreshIcon } from '../../components/icons';
 import { checkPwnedPassword } from '../../lib/hibp';
+import { estimateStrength } from '../../lib/passwordStrength';
 
 interface Props {
   label: string;
@@ -34,35 +35,6 @@ function generatePassword(length = 20): string {
     [chars[i], chars[j]] = [chars[j], chars[i]];
   }
   return chars.join('');
-}
-
-interface Strength {
-  level: 0 | 1 | 2 | 3 | 4;
-  label: string;
-  color: string;
-}
-
-const LEVELS: Record<number, { label: string; color: string }> = {
-  1: { label: 'Weak', color: '#ff6b6b' },
-  2: { label: 'Fair', color: '#f5a623' },
-  3: { label: 'Good', color: '#e6d24a' },
-  4: { label: 'Strong', color: '#4ccf7f' },
-};
-
-/** Estimate strength from entropy (length × log2(character-pool size)). */
-function estimateStrength(pw: string): Strength {
-  if (!pw) return { level: 0, label: '', color: '#2a303c' };
-
-  let pool = 0;
-  if (/[a-z]/.test(pw)) pool += 26;
-  if (/[A-Z]/.test(pw)) pool += 26;
-  if (/[0-9]/.test(pw)) pool += 10;
-  if (/[^A-Za-z0-9]/.test(pw)) pool += 33;
-
-  const entropy = pw.length * Math.log2(pool || 1);
-  const level: Strength['level'] = entropy < 28 ? 1 : entropy < 44 ? 2 : entropy < 64 ? 3 : 4;
-
-  return { level, ...LEVELS[level] };
 }
 
 type Breach =

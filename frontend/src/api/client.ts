@@ -143,6 +143,15 @@ export async function fetchVaultItem(id: number): Promise<VaultItemDetail> {
   return data;
 }
 
+/**
+ * Bulk-fetch login items with their (still-encrypted) `data` blob for
+ * client-side password-health analysis. Not audited as views server-side.
+ */
+export async function fetchHealthItems(): Promise<VaultItemDetail[]> {
+  const { data } = await api.get<VaultItemDetail[]>('/vault-items/health');
+  return data;
+}
+
 export async function createVaultItem(payload: VaultItemPayload): Promise<VaultItemDetail> {
   await ensureCsrf();
   const { data } = await api.post<VaultItemDetail>('/vault-items', payload);

@@ -10,6 +10,7 @@ use App\Events\AuditLogRecorded;
 use App\Models\AuditLog;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Support\Carbon;
 
 class RecordAuditLog implements ShouldQueue
 {
@@ -44,7 +45,8 @@ class RecordAuditLog implements ShouldQueue
             return;
         }
 
-        $log = AuditLog::query()->create([
+        $log = new AuditLog;
+        $log->fill([
             'user_id' => $this->entry->getUserId(),
             'action' => $this->entry->getAction(),
             'auditable_type' => $this->entry->getAuditableType(),
@@ -52,6 +54,9 @@ class RecordAuditLog implements ShouldQueue
             'ip' => $this->entry->getIp(),
             'user_agent' => $this->entry->getUserAgent(),
         ]);
+        // Stamp the request-time timestamp so a slow queue never skews the log.
+        $log->created_at = $this->entry->getOccurredAt();
+        $log->save();
 
         // Push the new entry to the owner's live activity feed.
         if ($log->user_id !== null) {
@@ -76,12 +81,15 @@ class RecordAuditLog implements ShouldQueue
             return false;
         }
 
+        $since = Carbon::parse($this->entry->getOccurredAt())
+            ->subSeconds(self::DEDUPE_WINDOW_SECONDS);
+
         return AuditLog::query()
             ->where('user_id', $this->entry->getUserId())
             ->where('action', $this->entry->getAction())
             ->where('auditable_type', $this->entry->getAuditableType())
             ->where('auditable_id', $this->entry->getAuditableId())
-            ->where('created_at', '>=', now()->subSeconds(self::DEDUPE_WINDOW_SECONDS))
+            ->where('created_at', '>=', $since)
             ->exists();
     }
 }

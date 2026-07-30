@@ -59,6 +59,7 @@ it('writes an audit row when the job runs', function () {
         auditableId: 5,
         ip: '127.0.0.1',
         userAgent: 'PHPUnit',
+        occurredAt: now()->toDateTimeString(),
     );
 
     (new RecordAuditLog($entry))->handle();
@@ -67,6 +68,28 @@ it('writes an audit row when the job runs', function () {
         'user_id' => $user->id,
         'action' => 'item.viewed',
         'auditable_id' => 5,
+    ]);
+});
+
+it('stamps the row with the request time, not the job run time', function () {
+    $user = User::factory()->create();
+    $occurredAt = now()->subMinutes(10)->toDateTimeString();
+
+    $entry = new AuditEntryDTO(
+        action: AuditAction::ItemViewed->value,
+        userId: $user->id,
+        auditableType: 'vault_item',
+        auditableId: 5,
+        ip: '127.0.0.1',
+        userAgent: 'PHPUnit',
+        occurredAt: $occurredAt,
+    );
+
+    (new RecordAuditLog($entry))->handle();
+
+    $this->assertDatabaseHas('audit_logs', [
+        'user_id' => $user->id,
+        'created_at' => $occurredAt,
     ]);
 });
 

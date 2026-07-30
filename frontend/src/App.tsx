@@ -6,11 +6,13 @@ import ActivityLog from './features/activity/ActivityLog';
 import VaultBrowser from './features/vault/VaultBrowser';
 import PasskeyManager from './features/passkeys/PasskeyManager';
 import SessionManager from './features/sessions/SessionManager';
+import PasswordHealth, { tenPointScore } from './features/health/PasswordHealth';
+import { usePasswordHealth } from './features/health/usePasswordHealth';
 import { LogoutIcon } from './components/icons';
 import { useVaultKey } from './features/encryption/vaultKey';
 import './App.css';
 
-type Tab = 'vault' | 'passkeys';
+type Tab = 'vault' | 'passkeys' | 'health';
 
 type Mode = 'login' | 'register';
 
@@ -32,7 +34,12 @@ export default function App() {
   const location = useLocation();
   const navigate = useNavigate();
   const { lock } = useVaultKey();
-  const tab: Tab = location.pathname.startsWith('/passkeys') ? 'passkeys' : 'vault';
+  const health = usePasswordHealth();
+  const tab: Tab = location.pathname.startsWith('/passkeys')
+    ? 'passkeys'
+    : location.pathname.startsWith('/health')
+      ? 'health'
+      : 'vault';
   const favActive =
     tab === 'vault' && new URLSearchParams(location.search).get('fav') === '1';
 
@@ -153,7 +160,15 @@ export default function App() {
             active={tab === 'passkeys'}
             onClick={() => navigate('/passkeys')}
           />
-          <Stat label="Folders" value={dashboard.stats.folders} />
+          <button
+            className={`stat stat-tab${tab === 'health' ? ' active' : ''}`}
+            onClick={() => navigate('/health')}
+          >
+            <span className="stat-value">
+              {health.report ? tenPointScore(health.report.score) : '–'}
+            </span>
+            <span className="stat-label">Health</span>
+          </button>
         </div>
 
         {tab === 'passkeys' ? (
@@ -162,6 +177,8 @@ export default function App() {
             <SessionManager />
             <ActivityLog userId={dashboard.user.id} />
           </>
+        ) : tab === 'health' ? (
+          <PasswordHealth health={health} />
         ) : (
           <VaultBrowser onChange={refresh} />
         )}
@@ -210,15 +227,6 @@ export default function App() {
 
       {error && <p className="error">{error}</p>}
     </main>
-  );
-}
-
-function Stat({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="stat">
-      <span className="stat-value">{value}</span>
-      <span className="stat-label">{label}</span>
-    </div>
   );
 }
 

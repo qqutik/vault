@@ -13,6 +13,8 @@ final class AuditEntryDTO extends BaseDTO
      * @param  int|null  $auditableId  Audited entity id, if any.
      * @param  string|null  $ip  Request IP address.
      * @param  string|null  $userAgent  Request user agent.
+     * @param  string  $occurredAt  When the action happened (captured at request
+     *                              time, so a slow queue never skews the log).
      */
     public function __construct(
         protected string $action,
@@ -21,12 +23,13 @@ final class AuditEntryDTO extends BaseDTO
         protected ?int $auditableId,
         protected ?string $ip,
         protected ?string $userAgent,
+        protected string $occurredAt,
     ) {}
 
     /**
      * Build the DTO from an array.
      *
-     * @param  array{action: string, user_id?: int|null, auditable_type?: string|null, auditable_id?: int|null, ip?: string|null, user_agent?: string|null}  $validated
+     * @param  array{action: string, user_id?: int|null, auditable_type?: string|null, auditable_id?: int|null, ip?: string|null, user_agent?: string|null, occurred_at: string}  $validated
      * @return self
      */
     public static function fromArray(array $validated): self
@@ -38,6 +41,7 @@ final class AuditEntryDTO extends BaseDTO
             auditableId: $validated['auditable_id'] ?? null,
             ip: $validated['ip'] ?? null,
             userAgent: $validated['user_agent'] ?? null,
+            occurredAt: $validated['occurred_at'],
         );
     }
 
@@ -165,5 +169,26 @@ final class AuditEntryDTO extends BaseDTO
     public function setUserAgent(?string $userAgent): void
     {
         $this->userAgent = $userAgent;
+    }
+
+    /**
+     * Get when the action happened (request-time capture).
+     *
+     * @return string
+     */
+    public function getOccurredAt(): string
+    {
+        return $this->occurredAt;
+    }
+
+    /**
+     * Set when the action happened.
+     *
+     * @param  string  $occurredAt
+     * @return void
+     */
+    public function setOccurredAt(string $occurredAt): void
+    {
+        $this->occurredAt = $occurredAt;
     }
 }
