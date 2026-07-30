@@ -34,6 +34,7 @@ export interface DashboardStats {
   vault_items: number;
   passkeys: number;
   favorites: number;
+  protected: number;
 }
 
 export interface Dashboard {

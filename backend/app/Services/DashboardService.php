@@ -23,6 +23,7 @@ class DashboardService
             vaultItemsCount: $user->vaultItems()->count(),
             passkeysCount: $user->webAuthnCredentials()->count(),
             favoritesCount: $user->vaultItems()->where('favorite', true)->count(),
+            protectedCount: $user->vaultItems()->where('require_reauth', true)->count(),
         );
     }
 }

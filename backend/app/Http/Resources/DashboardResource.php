@@ -29,6 +29,7 @@ class DashboardResource extends JsonResource
                 'vault_items' => $dto->getVaultItemsCount(),
                 'passkeys' => $dto->getPasskeysCount(),
                 'favorites' => $dto->getFavoritesCount(),
+                'protected' => $dto->getProtectedCount(),
             ],
         ];
     }

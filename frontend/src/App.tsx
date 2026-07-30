@@ -4,15 +4,16 @@ import { fetchDashboard, logout, type Dashboard } from './api/client';
 import { loginWithPasskey, registerPasskey } from './auth/passkey';
 import ActivityLog from './features/activity/ActivityLog';
 import VaultBrowser from './features/vault/VaultBrowser';
-import PasskeyManager from './features/passkeys/PasskeyManager';
-import SessionManager from './features/sessions/SessionManager';
-import PasswordHealth, { tenPointScore } from './features/health/PasswordHealth';
+import DevicesView from './features/devices/DevicesView';
+import SettingsView from './features/settings/SettingsView';
+import PasswordHealth from './features/health/PasswordHealth';
 import { usePasswordHealth } from './features/health/usePasswordHealth';
-import { LogoutIcon } from './components/icons';
+import LockDial from './components/LockDial';
+import { HistoryIcon, LogoutIcon, SettingsIcon } from './components/icons';
 import { useVaultKey } from './features/encryption/vaultKey';
 import './App.css';
 
-type Tab = 'vault' | 'passkeys' | 'health';
+type Tab = 'vault' | 'devices' | 'health' | 'activity' | 'settings';
 
 type Mode = 'login' | 'register';
 
@@ -35,13 +36,20 @@ export default function App() {
   const navigate = useNavigate();
   const { lock } = useVaultKey();
   const health = usePasswordHealth();
-  const tab: Tab = location.pathname.startsWith('/passkeys')
-    ? 'passkeys'
-    : location.pathname.startsWith('/health')
+  const path = location.pathname;
+  const tab: Tab = path.startsWith('/devices') || path.startsWith('/passkeys')
+    ? 'devices'
+    : path.startsWith('/health')
       ? 'health'
-      : 'vault';
-  const favActive =
-    tab === 'vault' && new URLSearchParams(location.search).get('fav') === '1';
+      : path.startsWith('/activity')
+        ? 'activity'
+        : path.startsWith('/settings')
+          ? 'settings'
+          : 'vault';
+  const protectedActive =
+    tab === 'vault' && new URLSearchParams(location.search).get('protected') === '1';
+  const secretsActive = tab === 'vault' && !protectedActive;
+  const healthScore = health.report ? Math.round(health.report.score / 10) : 0;
 
   const [checking, setChecking] = useState(true);
   const [dashboard, setDashboard] = useState<Dashboard | null>(null);
@@ -57,8 +65,11 @@ export default function App() {
 
   // Default authenticated route (also redirect legacy paths).
   useEffect(() => {
-    if (dashboard && ['/', '/items', '/folders'].includes(location.pathname)) {
+    if (!dashboard) return;
+    if (['/', '/items', '/folders'].includes(location.pathname)) {
       navigate('/vault', { replace: true });
+    } else if (location.pathname.startsWith('/passkeys')) {
+      navigate('/devices', { replace: true });
     }
   }, [dashboard, location.pathname, navigate]);
 
@@ -119,14 +130,32 @@ export default function App() {
             <h1>🔐 Vault</h1>
             <p className="muted">Signed in as {dashboard.user.name}</p>
           </div>
-          <button
-            className="icon-btn logout"
-            title="Log out"
-            aria-label="Log out"
-            onClick={handleLogout}
-          >
-            <LogoutIcon />
-          </button>
+          <div className="header-actions">
+            <button
+              className={`icon-btn${tab === 'activity' ? ' active' : ''}`}
+              title="Recent activity"
+              aria-label="Recent activity"
+              onClick={() => navigate('/activity')}
+            >
+              <HistoryIcon />
+            </button>
+            <button
+              className={`icon-btn${tab === 'settings' ? ' active' : ''}`}
+              title="Settings"
+              aria-label="Settings"
+              onClick={() => navigate('/settings')}
+            >
+              <SettingsIcon />
+            </button>
+            <button
+              className="icon-btn logout"
+              title="Log out"
+              aria-label="Log out"
+              onClick={handleLogout}
+            >
+              <LogoutIcon />
+            </button>
+          </div>
         </header>
 
         {recoveryCodes && (
@@ -141,44 +170,41 @@ export default function App() {
           </div>
         )}
 
-        <div className="stats">
-          <StatTab
-            label="Items"
+        <div className="dials">
+          <LockDial
+            label="Secrets"
             value={dashboard.stats.vault_items}
-            active={tab === 'vault' && !favActive}
+            active={secretsActive}
             onClick={() => navigate('/vault')}
           />
-          <StatTab
-            label="Favorites"
-            value={dashboard.stats.favorites}
-            active={favActive}
-            onClick={() => navigate('/vault?fav=1')}
+          <LockDial
+            label="Protected"
+            value={dashboard.stats.protected}
+            active={protectedActive}
+            onClick={() => navigate('/vault?protected=1')}
           />
-          <StatTab
-            label="Passkeys"
+          <LockDial
+            label="Devices"
             value={dashboard.stats.passkeys}
-            active={tab === 'passkeys'}
-            onClick={() => navigate('/passkeys')}
+            active={tab === 'devices'}
+            onClick={() => navigate('/devices')}
           />
-          <button
-            className={`stat stat-tab${tab === 'health' ? ' active' : ''}`}
+          <LockDial
+            label="Health"
+            value={healthScore}
+            active={tab === 'health'}
             onClick={() => navigate('/health')}
-          >
-            <span className="stat-value">
-              {health.report ? tenPointScore(health.report.score) : '–'}
-            </span>
-            <span className="stat-label">Health</span>
-          </button>
+          />
         </div>
 
-        {tab === 'passkeys' ? (
-          <>
-            <PasskeyManager onChange={refresh} />
-            <SessionManager />
-            <ActivityLog userId={dashboard.user.id} />
-          </>
+        {tab === 'devices' ? (
+          <DevicesView onChange={refresh} />
         ) : tab === 'health' ? (
           <PasswordHealth health={health} />
+        ) : tab === 'activity' ? (
+          <ActivityLog userId={dashboard.user.id} />
+        ) : tab === 'settings' ? (
+          <SettingsView />
         ) : (
           <VaultBrowser onChange={refresh} />
         )}
@@ -227,24 +253,5 @@ export default function App() {
 
       {error && <p className="error">{error}</p>}
     </main>
-  );
-}
-
-function StatTab({
-  label,
-  value,
-  active,
-  onClick,
-}: {
-  label: string;
-  value: number;
-  active: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <button className={`stat stat-tab${active ? ' active' : ''}`} onClick={onClick}>
-      <span className="stat-value">{value}</span>
-      <span className="stat-label">{label}</span>
-    </button>
   );
 }

@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useVaultKey } from '../encryption/vaultKey';
 import {
@@ -7,6 +6,8 @@ import {
   type IssueKind,
 } from '../../lib/passwordHealth';
 import { LockIcon } from '../../components/icons';
+import { useDialog } from '../../components/DialogProvider';
+import { useToast } from '../../components/ToastProvider';
 import type { HealthState } from './usePasswordHealth';
 
 /** Colour for the score ring / issue chips by severity. */
@@ -17,16 +18,12 @@ const ISSUE_COLOR: Record<IssueKind, string> = {
   old: '#8b93a3',
 };
 
-/** Convert the 0–100 score to a one-decimal 0–10 grade. */
-export function tenPointScore(score: number): string {
-  return (score / 10).toFixed(1);
-}
-
 export default function PasswordHealth({ health }: { health: HealthState }) {
   const navigate = useNavigate();
   const { status, unlock, unlockWithRecovery } = useVaultKey();
+  const { prompt } = useDialog();
+  const toast = useToast();
   const { report, phase, error, retry } = health;
-  const [unlockError, setUnlockError] = useState<string | null>(null);
 
   if (status !== 'unlocked') {
     return (
@@ -40,10 +37,14 @@ export default function PasswordHealth({ health }: { health: HealthState }) {
               type="button"
               className="link"
               disabled={status === 'unlocking'}
-              onClick={() => {
-                const key = window.prompt('Enter your recovery key');
-                if (key)
-                  unlockWithRecovery(key).catch(() => setUnlockError('Recovery key did not work.'));
+              onClick={async () => {
+                const key = await prompt({
+                  title: 'Recovery key',
+                  message: 'Enter your recovery key to unlock the vault.',
+                  placeholder: 'xxxxxxxx-xxxx-…',
+                  confirmLabel: 'Unlock',
+                });
+                if (key) unlockWithRecovery(key).catch(() => toast.error('Recovery key did not work'));
               }}
             >
               Use recovery key
@@ -53,14 +54,13 @@ export default function PasswordHealth({ health }: { health: HealthState }) {
               className="small"
               disabled={status === 'unlocking'}
               onClick={() =>
-                unlock().catch(() => setUnlockError('Could not unlock (passkey/PRF unavailable).'))
+                unlock().catch(() => toast.error('Could not unlock (passkey/PRF unavailable)'))
               }
             >
               {status === 'unlocking' ? 'Unlocking…' : 'Unlock'}
             </button>
           </span>
         </div>
-        {unlockError && <p className="error">{unlockError}</p>}
       </section>
     );
   }
