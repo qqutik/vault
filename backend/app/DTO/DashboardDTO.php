@@ -14,6 +14,7 @@ final class DashboardDTO extends BaseDTO
      * @param  int  $vaultItemsCount  Number of vault items.
      * @param  int  $passkeysCount  Number of registered passkeys.
      * @param  int  $favoritesCount  Number of favorite items.
+     * @param  int  $protectedCount  Number of step-up (passkey-protected) items.
      */
     public function __construct(
         protected User $user,
@@ -21,6 +22,7 @@ final class DashboardDTO extends BaseDTO
         protected int $vaultItemsCount,
         protected int $passkeysCount,
         protected int $favoritesCount,
+        protected int $protectedCount,
     ) {}
 
     /**
@@ -126,5 +128,26 @@ final class DashboardDTO extends BaseDTO
     public function setFavoritesCount(int $favoritesCount): void
     {
         $this->favoritesCount = $favoritesCount;
+    }
+
+    /**
+     * Get the number of step-up (passkey-protected) items.
+     *
+     * @return int
+     */
+    public function getProtectedCount(): int
+    {
+        return $this->protectedCount;
+    }
+
+    /**
+     * Set the number of step-up (passkey-protected) items.
+     *
+     * @param  int  $protectedCount
+     * @return void
+     */
+    public function setProtectedCount(int $protectedCount): void
+    {
+        $this->protectedCount = $protectedCount;
     }
 }

@@ -10,6 +10,8 @@ import { addPasskey } from '../../auth/passkey';
 import { useVaultKey } from '../encryption/vaultKey';
 import { LockIcon, LockPlusIcon, TrashIcon } from '../../components/icons';
 import Modal from '../../components/Modal';
+import { useDialog } from '../../components/DialogProvider';
+import { useToast } from '../../components/ToastProvider';
 
 interface Props {
   /** Called after any change so the parent can refresh dependent data (stats). */
@@ -18,6 +20,8 @@ interface Props {
 
 export default function PasskeyManager({ onChange }: Props) {
   const { enroll, setupRecovery } = useVaultKey();
+  const { confirm } = useDialog();
+  const toast = useToast();
 
   const [passkeys, setPasskeys] = useState<Passkey[]>([]);
   const [enrolled, setEnrolled] = useState<string[]>([]);
@@ -101,7 +105,13 @@ export default function PasskeyManager({ onChange }: Props) {
 
   async function remove(passkey: Passkey) {
     const label = passkey.alias ?? 'this passkey';
-    if (!confirm(`Remove ${label}? You will no longer be able to sign in with it.`)) return;
+    const ok = await confirm({
+      title: 'Remove passkey?',
+      message: `You will no longer be able to sign in with ${label}.`,
+      confirmLabel: 'Remove',
+      danger: true,
+    });
+    if (!ok) return;
 
     setBusy(true);
     setError(null);
@@ -109,11 +119,12 @@ export default function PasskeyManager({ onChange }: Props) {
       setPasskeys(await deletePasskey(passkey.id));
       onChange?.();
       refreshEnrolled();
+      toast.success('Passkey removed');
     } catch (err) {
       const message =
         (err as { response?: { data?: { errors?: { id?: string[] } } } }).response?.data?.errors
           ?.id?.[0] ?? 'Failed to remove passkey.';
-      setError(message);
+      toast.error(message);
     } finally {
       setBusy(false);
     }

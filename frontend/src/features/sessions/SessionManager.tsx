@@ -6,6 +6,8 @@ import {
   type SessionInfo,
 } from '../../api/client';
 import { MonitorIcon, TrashIcon } from '../../components/icons';
+import { useDialog } from '../../components/DialogProvider';
+import { useToast } from '../../components/ToastProvider';
 
 function timeAgo(iso: string): string {
   const seconds = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
@@ -18,6 +20,8 @@ function timeAgo(iso: string): string {
 }
 
 export default function SessionManager() {
+  const { confirm } = useDialog();
+  const toast = useToast();
   const [sessions, setSessions] = useState<SessionInfo[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -29,26 +33,40 @@ export default function SessionManager() {
   }, []);
 
   async function revoke(session: SessionInfo) {
-    if (!confirm('Sign out this device? It will need to log in again.')) return;
+    const ok = await confirm({
+      title: 'Sign out this device?',
+      message: 'It will need to log in again.',
+      confirmLabel: 'Sign out',
+      danger: true,
+    });
+    if (!ok) return;
     setBusy(true);
     setError(null);
     try {
       setSessions(await revokeSession(session.id));
+      toast.success('Device signed out');
     } catch {
-      setError('Failed to revoke session.');
+      toast.error('Failed to revoke session');
     } finally {
       setBusy(false);
     }
   }
 
   async function revokeOthers() {
-    if (!confirm('Sign out of all other devices?')) return;
+    const ok = await confirm({
+      title: 'Sign out other devices?',
+      message: 'All sessions except this one will be signed out.',
+      confirmLabel: 'Sign out all',
+      danger: true,
+    });
+    if (!ok) return;
     setBusy(true);
     setError(null);
     try {
       setSessions(await revokeOtherSessions());
+      toast.success('Other devices signed out');
     } catch {
-      setError('Failed to sign out other devices.');
+      toast.error('Failed to sign out other devices');
     } finally {
       setBusy(false);
     }

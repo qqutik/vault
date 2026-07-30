@@ -147,32 +147,28 @@ button.secondary {
   margin-bottom: 0.25rem;
 }
 
-.icon-btn.logout {
-  width: 38px;
-  height: 38px;
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
   flex: none;
 }
 
-.stats {
+.icon-btn.logout {
+  flex: none;
+}
+
+.icon-btn.active {
+  background: #1a1f2e;
+  border-color: #5b7cfa;
+  color: #e7e9ee;
+}
+
+.dials {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 0.6rem;
   margin-top: 1.25rem;
-}
-
-button.stat-tab {
-  font: inherit;
-  cursor: pointer;
-  transition: border-color 0.15s, background 0.15s;
-}
-
-button.stat-tab:hover {
-  border-color: #3a4152;
-}
-
-button.stat-tab.active {
-  border-color: #5b7cfa;
-  background: #1a1f2e;
 }
 
 .row-actions {
@@ -243,22 +239,80 @@ button.stat-tab.active {
   align-self: flex-start;
 }
 
-.stat {
+.lock-dial {
   display: flex;
   flex-direction: column;
   align-items: center;
-  background: #0f1115;
+  gap: 0.4rem;
+  background: transparent;
+  border: none;
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
+}
+
+.lock-wheel {
+  position: relative;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: #0b0d11;
   border: 1px solid #262b36;
   border-radius: 10px;
-  padding: 0.75rem 0.25rem;
+  padding: 0.35rem 0;
+  overflow: hidden;
+  transition: border-color 0.15s;
 }
 
-.stat-value {
-  font-size: 1.4rem;
-  font-weight: 700;
+.lock-dial:hover .lock-wheel {
+  border-color: #3a4152;
 }
 
-.stat-label {
+.lock-dial.active .lock-wheel {
+  border-color: #5b7cfa;
+  box-shadow: 0 0 0 1px #5b7cfa inset;
+}
+
+.lock-wheel::before,
+.lock-wheel::after {
+  content: '';
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  height: 1px;
+  background: #262b36;
+}
+
+.lock-wheel::before {
+  top: calc(50% - 18px);
+}
+
+.lock-wheel::after {
+  top: calc(50% + 18px);
+}
+
+.lock-ghost {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.85rem;
+  line-height: 1.1;
+  min-height: 1.1em;
+  color: #4b515e;
+}
+
+.lock-main {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 1.7rem;
+  font-weight: 600;
+  line-height: 1.1;
+  color: #e7e9ee;
+}
+
+.lock-dial.active .lock-main {
+  color: #8ea2ff;
+}
+
+.lock-dial-label {
   font-size: 0.72rem;
   color: #8b93a3;
   text-transform: uppercase;
@@ -647,6 +701,9 @@ button.small {
 }
 
 .crumb {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
   background: none;
   border: none;
   padding: 0.15rem 0.25rem;
@@ -1169,6 +1226,112 @@ button.small.secondary {
 .select-option.active {
   background: #1a1f2e;
   color: #8ea2ff;
+}
+
+/* Confirm / prompt dialogs */
+.dialog-message {
+  margin: 0 0 1rem;
+}
+
+.dialog-input {
+  width: 100%;
+  margin-bottom: 1rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.dialog-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.dialog-actions button {
+  min-width: 96px;
+  padding: 0.5rem 1.1rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  line-height: 1.2;
+  border: 1px solid transparent;
+  box-sizing: border-box;
+}
+
+button.small.danger {
+  background: #b3352f;
+  border: 1px solid #b3352f;
+  color: #fff;
+}
+
+button.small.danger:hover {
+  background: #c73f38;
+}
+
+/* Toasts */
+.toast-stack {
+  position: fixed;
+  top: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.5rem;
+  width: min(420px, 92vw);
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.7rem 0.9rem;
+  border-radius: 10px;
+  border: 1px solid #2a303c;
+  background: #1b1f27;
+  color: #e7e9ee;
+  font-size: 0.9rem;
+  text-align: left;
+  cursor: pointer;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.55);
+  animation: toast-in 0.18s ease-out;
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}
+
+.toast-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  flex: none;
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+.toast-success .toast-icon {
+  background: #17402f;
+  color: #4ccf7f;
+}
+
+.toast-error .toast-icon {
+  background: #3a1c1c;
+  color: #ff6b6b;
+}
+
+.toast-info .toast-icon {
+  background: #1a2740;
+  color: #8ea2ff;
+}
+
+.toast-msg {
+  flex: 1;
 }
 
 /* Password health dashboard */

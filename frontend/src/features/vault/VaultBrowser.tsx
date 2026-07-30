@@ -20,6 +20,7 @@ import {
   CopyIcon,
   FolderIcon,
   FolderPlusIcon,
+  HomeIcon,
   KeyIcon,
   KeyPlusIcon,
   LockIcon,
@@ -28,6 +29,8 @@ import {
   TrashIcon,
 } from '../../components/icons';
 import Menu from '../../components/Menu';
+import { useDialog } from '../../components/DialogProvider';
+import { useToast } from '../../components/ToastProvider';
 import { unlockVaultItem } from '../../auth/passkey';
 import { useVaultKey } from '../encryption/vaultKey';
 import { isEncryptedBlob, type EncryptedBlob } from '../../lib/crypto';
@@ -86,6 +89,8 @@ export default function VaultBrowser({ onChange }: Props) {
   const [params, setParams] = useSearchParams();
   const { status: vaultStatus, unlock, unlockWithRecovery, ensureUnlocked, encrypt, decrypt } =
     useVaultKey();
+  const { confirm, prompt } = useDialog();
+  const toast = useToast();
   const migratedRef = useRef(false);
   // Track what we've already opened so a re-render (or StrictMode's double
   // effect invocation in dev) doesn't fire a second view/unlock — which would
@@ -119,6 +124,7 @@ export default function VaultBrowser({ onChange }: Props) {
   // --- URL is the source of truth for location & overlays ---
   const currentFolderId = params.get('folder') ? Number(params.get('folder')) : null;
   const favOnly = params.get('fav') === '1';
+  const protectedOnly = params.get('protected') === '1';
   const viewId = params.get('view') ? Number(params.get('view')) : null;
   const itemForm = params.get('itemForm'); // 'new' | '<id>' | null
   const folderForm = params.get('folderForm'); // 'new' | '<id>' | null
@@ -138,6 +144,7 @@ export default function VaultBrowser({ onChange }: Props) {
     patchParams({
       folder: id != null ? String(id) : null,
       fav: null,
+      protected: null,
       view: null,
       itemForm: null,
       folderForm: null,
@@ -325,17 +332,18 @@ export default function VaultBrowser({ onChange }: Props) {
   const visibleItems = useMemo(() => {
     let list: VaultItemSummary[];
     if (term) list = items.filter((i) => i.title.toLowerCase().includes(term));
+    else if (protectedOnly) list = items.filter((i) => i.require_reauth);
     else if (favOnly) list = items.filter((i) => i.favorite);
     else list = items.filter((i) => i.folder_id === currentFolderId);
     return [...list].sort((a, b) => Number(b.favorite) - Number(a.favorite));
-  }, [items, term, favOnly, currentFolderId]);
+  }, [items, term, protectedOnly, favOnly, currentFolderId]);
 
   const matchedFolders = useMemo(
     () => (term ? folders.filter((f) => f.name.toLowerCase().includes(term)) : subfolders),
     [term, folders, subfolders],
   );
 
-  const showFolders = !favOnly;
+  const showFolders = !favOnly && !protectedOnly;
   const isEmpty = (!showFolders || matchedFolders.length === 0) && visibleItems.length === 0;
 
   // --- Item form helpers ---
@@ -378,11 +386,13 @@ export default function VaultBrowser({ onChange }: Props) {
         require_reauth: requireReauth,
       };
 
+      const isEdit = editingItemId != null;
       if (editingItemId) await updateVaultItem(editingItemId, payload);
       else await createVaultItem(payload);
       await load();
       onChange?.();
       closeOverlay();
+      toast.success(isEdit ? 'Item updated' : 'Item created');
     } catch {
       setError('Unlock the vault to save (passkey required).');
     } finally {
@@ -391,14 +401,21 @@ export default function VaultBrowser({ onChange }: Props) {
   }
 
   async function removeItem(id: number) {
-    if (!confirm('Delete this item?')) return;
+    const ok = await confirm({
+      title: 'Delete item?',
+      message: 'This permanently deletes the item and its secret.',
+      confirmLabel: 'Delete',
+      danger: true,
+    });
+    if (!ok) return;
     setBusy(true);
     try {
       await deleteVaultItem(id);
       await load();
       onChange?.();
+      toast.success('Item deleted');
     } catch {
-      setError('Failed to delete.');
+      toast.error('Failed to delete item');
     } finally {
       setBusy(false);
     }
@@ -412,11 +429,13 @@ export default function VaultBrowser({ onChange }: Props) {
     setBusy(true);
     setError(null);
     try {
+      const isEdit = editingFolderId != null;
       if (editingFolderId) await updateFolder(editingFolderId, trimmed, folderParentId);
       else await createFolder(trimmed, folderParentId);
       await load();
       onChange?.();
       closeOverlay();
+      toast.success(isEdit ? 'Folder updated' : 'Folder created');
     } catch (err) {
       const errors = (err as { response?: { data?: { errors?: Record<string, string[]> } } })
         .response?.data?.errors;
@@ -438,15 +457,22 @@ export default function VaultBrowser({ onChange }: Props) {
   }
 
   async function removeFolder(folder: Folder) {
-    if (!confirm(`Delete folder “${folder.name}”? Subfolders and their items go too.`)) return;
+    const ok = await confirm({
+      title: 'Delete folder?',
+      message: `“${folder.name}”, its subfolders, and all their items will be deleted.`,
+      confirmLabel: 'Delete',
+      danger: true,
+    });
+    if (!ok) return;
     setBusy(true);
     setError(null);
     try {
       await deleteFolder(folder.id);
       await load();
       onChange?.();
+      toast.success('Folder deleted');
     } catch {
-      setError('Failed to delete.');
+      toast.error('Failed to delete folder');
     } finally {
       setBusy(false);
     }
@@ -464,12 +490,15 @@ export default function VaultBrowser({ onChange }: Props) {
               type="button"
               className="link"
               disabled={vaultStatus === 'unlocking'}
-              onClick={() => {
-                const key = window.prompt('Enter your recovery key');
+              onClick={async () => {
+                const key = await prompt({
+                  title: 'Recovery key',
+                  message: 'Enter your recovery key to unlock the vault.',
+                  placeholder: 'xxxxxxxx-xxxx-…',
+                  confirmLabel: 'Unlock',
+                });
                 if (key) {
-                  unlockWithRecovery(key).catch(() =>
-                    setError('Recovery key did not work.'),
-                  );
+                  unlockWithRecovery(key).catch(() => toast.error('Recovery key did not work'));
                 }
               }}
             >
@@ -493,15 +522,21 @@ export default function VaultBrowser({ onChange }: Props) {
       <nav className="crumbs" aria-label="Breadcrumb">
         <button
           type="button"
-          className={`crumb${currentFolderId == null && !favOnly ? ' active' : ''}`}
+          className={`crumb${currentFolderId == null && !favOnly && !protectedOnly ? ' active' : ''}`}
           onClick={() => openFolder(null)}
         >
-          Vaults
+          <HomeIcon size={14} /> Home
         </button>
         {favOnly && (
           <>
             <span className="crumb-sep">/</span>
             <span className="crumb active">Favorites</span>
+          </>
+        )}
+        {protectedOnly && (
+          <>
+            <span className="crumb-sep">/</span>
+            <span className="crumb active">Protected</span>
           </>
         )}
         {breadcrumb.map((folder) => (
@@ -545,7 +580,13 @@ export default function VaultBrowser({ onChange }: Props) {
 
       {isEmpty ? (
         <p className="muted">
-          {term ? 'Nothing found.' : favOnly ? 'No favorites yet.' : 'This folder is empty.'}
+          {term
+            ? 'Nothing found.'
+            : protectedOnly
+              ? 'No passkey-protected items yet.'
+              : favOnly
+                ? 'No favorites yet.'
+                : 'This folder is empty.'}
         </p>
       ) : (
         <ul className="tree">
