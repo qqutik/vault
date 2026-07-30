@@ -1,6 +1,13 @@
-import { useEffect, useState } from 'react';
-import { deletePasskey, fetchPasskeys, type Passkey } from '../../api/client';
+import { useCallback, useEffect, useState } from 'react';
+import {
+  deletePasskey,
+  fetchEnrolledCredentials,
+  fetchPasskeys,
+  fetchRecoveryMaterial,
+  type Passkey,
+} from '../../api/client';
 import { addPasskey } from '../../auth/passkey';
+import { useVaultKey } from '../encryption/vaultKey';
 import { LockIcon, LockPlusIcon, TrashIcon } from '../../components/icons';
 import Modal from '../../components/Modal';
 
@@ -9,27 +16,32 @@ interface Props {
   onChange?: () => void;
 }
 
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString(undefined, {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  });
-}
-
 export default function PasskeyManager({ onChange }: Props) {
+  const { enroll, setupRecovery } = useVaultKey();
+
   const [passkeys, setPasskeys] = useState<Passkey[]>([]);
+  const [enrolled, setEnrolled] = useState<string[]>([]);
+  const [recoverySet, setRecoverySet] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const [adding, setAdding] = useState(false);
   const [alias, setAlias] = useState('');
+  const [recoveryKey, setRecoveryKey] = useState<string | null>(null);
+
+  const refreshEnrolled = useCallback(() => {
+    fetchEnrolledCredentials().then(setEnrolled).catch(() => undefined);
+  }, []);
 
   useEffect(() => {
     fetchPasskeys()
       .then(setPasskeys)
       .catch(() => setError('Failed to load passkeys.'));
-  }, []);
+    refreshEnrolled();
+    fetchRecoveryMaterial()
+      .then((m) => setRecoverySet(m !== null))
+      .catch(() => undefined);
+  }, [refreshEnrolled]);
 
   async function add(e: React.FormEvent) {
     e.preventDefault();
@@ -39,16 +51,49 @@ export default function PasskeyManager({ onChange }: Props) {
     setBusy(true);
     setError(null);
     try {
-      setPasskeys(await addPasskey(name));
+      const { credentialId, passkeys: updated } = await addPasskey(name);
+      setPasskeys(updated);
       onChange?.();
       setAdding(false);
       setAlias('');
+      // Enrol the new device for encryption (wraps the vault key under its passkey).
+      try {
+        await enroll(credentialId);
+        refreshEnrolled();
+      } catch {
+        setError('Passkey added, but enabling encryption on it failed. Use “Enable encryption”.');
+      }
     } catch (err) {
-      // A cancelled WebAuthn prompt throws; keep the modal open with a hint.
       const message =
         (err as { response?: { data?: { message?: string } } }).response?.data?.message ??
         'Could not add the passkey. Try again.';
       setError(message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function enableEncryption(passkey: Passkey) {
+    setBusy(true);
+    setError(null);
+    try {
+      await enroll(passkey.id);
+      refreshEnrolled();
+    } catch {
+      setError('Could not enable encryption on this passkey (PRF/passkey unavailable).');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function createRecoveryKey() {
+    setBusy(true);
+    setError(null);
+    try {
+      setRecoveryKey(await setupRecovery());
+      setRecoverySet(true);
+    } catch {
+      setError('Could not set up a recovery key (unlock the vault first).');
     } finally {
       setBusy(false);
     }
@@ -63,6 +108,7 @@ export default function PasskeyManager({ onChange }: Props) {
     try {
       setPasskeys(await deletePasskey(passkey.id));
       onChange?.();
+      refreshEnrolled();
     } catch (err) {
       const message =
         (err as { response?: { data?: { errors?: { id?: string[] } } } }).response?.data?.errors
@@ -109,7 +155,19 @@ export default function PasskeyManager({ onChange }: Props) {
                   <LockIcon size={17} />
                   {passkey.alias ?? 'Unnamed device'}
                 </span>
-                <span className="passkey-date">Added {formatDate(passkey.created_at)}</span>
+                <span className="passkey-date">
+                  {enrolled.includes(passkey.id) ? (
+                    <span className="tag-ok">encrypted</span>
+                  ) : (
+                    <button
+                      className="link"
+                      onClick={() => enableEncryption(passkey)}
+                      disabled={busy}
+                    >
+                      Enable encryption
+                    </button>
+                  )}
+                </span>
               </div>
               <span className="row-actions">
                 <button
@@ -127,6 +185,16 @@ export default function PasskeyManager({ onChange }: Props) {
         </ul>
       )}
       {!adding && error && <p className="error">{error}</p>}
+
+      <div className="recovery-row">
+        <span className="muted">
+          Recovery key {recoverySet ? '· set' : '· not set'} — unlocks your vault if you lose every
+          passkey.
+        </span>
+        <button className="link" onClick={createRecoveryKey} disabled={busy}>
+          {recoverySet ? 'Regenerate' : 'Set up recovery key'}
+        </button>
+      </div>
 
       {adding && (
         <Modal title="Add a passkey" onClose={() => setAdding(false)}>
@@ -151,6 +219,24 @@ export default function PasskeyManager({ onChange }: Props) {
             </div>
             {error && <p className="error">{error}</p>}
           </form>
+        </Modal>
+      )}
+
+      {recoveryKey && (
+        <Modal title="Save your recovery key" onClose={() => setRecoveryKey(null)}>
+          <p className="muted">
+            Store this somewhere safe. It’s shown once and is the only way back in if you lose all
+            your passkeys.
+          </p>
+          <p className="mono recovery-key">{recoveryKey}</p>
+          <div className="form-actions">
+            <button type="button" onClick={() => navigator.clipboard?.writeText(recoveryKey)}>
+              Copy
+            </button>
+            <button type="button" className="secondary" onClick={() => setRecoveryKey(null)}>
+              I saved it
+            </button>
+          </div>
         </Modal>
       )}
     </section>

@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\AuditLogController;
 use App\Http\Controllers\Api\Auth\LoginController;
 use App\Http\Controllers\Api\Auth\RegisterController;
 use App\Http\Controllers\Api\DashboardController;
+use App\Http\Controllers\Api\EncryptionController;
 use App\Http\Controllers\Api\FolderController;
 use App\Http\Controllers\Api\PasskeyController;
 use App\Http\Controllers\Api\PwnedPasswordController;
@@ -64,6 +65,14 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::post('/passkeys/options', [PasskeyController::class, 'options']);
     Route::post('/passkeys/verify', [PasskeyController::class, 'verify']);
     Route::delete('/passkeys', [PasskeyController::class, 'destroy']);
+
+    // Zero-knowledge key bootstrap (PRF salt + wrapped VMK per passkey).
+    Route::post('/encryption/bootstrap', [EncryptionController::class, 'bootstrap']);
+    Route::get('/encryption/enrolled', [EncryptionController::class, 'enrolled']);
+    Route::get('/encryption/wrapped-key', [EncryptionController::class, 'wrappedKey']);
+    Route::post('/encryption/wrapped-key', [EncryptionController::class, 'storeWrappedKey']);
+    Route::get('/encryption/recovery', [EncryptionController::class, 'recovery']);
+    Route::post('/encryption/recovery', [EncryptionController::class, 'storeRecovery']);
 
     // Breach-check a password (Have I Been Pwned, k-anonymity — hash prefix only).
     Route::post('/pwned-passwords/check', [PwnedPasswordController::class, 'check']);

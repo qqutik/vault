@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
   createFolder,
@@ -23,10 +23,14 @@ import {
   KeyIcon,
   KeyPlusIcon,
   LockIcon,
+  MoreIcon,
   PencilIcon,
   TrashIcon,
 } from '../../components/icons';
+import Menu from '../../components/Menu';
 import { unlockVaultItem } from '../../auth/passkey';
+import { useVaultKey } from '../encryption/vaultKey';
+import { isEncryptedBlob, type EncryptedBlob } from '../../lib/crypto';
 import PasswordField from './PasswordField';
 import Modal from '../../components/Modal';
 import Select, { type SelectOption } from '../../components/Select';
@@ -80,6 +84,14 @@ const TYPE_LABEL: Record<VaultItemType, string> = Object.fromEntries(
 
 export default function VaultBrowser({ onChange }: Props) {
   const [params, setParams] = useSearchParams();
+  const { status: vaultStatus, unlock, unlockWithRecovery, ensureUnlocked, encrypt, decrypt } =
+    useVaultKey();
+  const migratedRef = useRef(false);
+  // Track what we've already opened so a re-render (or StrictMode's double
+  // effect invocation in dev) doesn't fire a second view/unlock — which would
+  // duplicate the audit entry.
+  const openedViewRef = useRef<number | null>(null);
+  const openedFormRef = useRef<string | null>(null);
 
   const [folders, setFolders] = useState<Folder[]>([]);
   const [items, setItems] = useState<VaultItemSummary[]>([]);
@@ -144,12 +156,67 @@ export default function VaultBrowser({ onChange }: Props) {
     setItems(i);
   }
 
+  // Decrypt a fetched item's `data` (no-op for legacy plaintext items).
+  async function decryptItem(item: VaultItemDetail): Promise<VaultItemDetail> {
+    if (isEncryptedBlob(item.data as unknown)) {
+      await ensureUnlocked();
+      return { ...item, data: await decrypt(item.data as unknown as EncryptedBlob) };
+    }
+    return item;
+  }
+
+  // One-shot migration: re-encrypt legacy plaintext items under the vault key so
+  // no plaintext remains server-side. Protected items migrate on their next edit.
+  async function migrateLegacyItems() {
+    let changed = false;
+    for (const summary of items) {
+      // Skip protected items and anything already encrypted — reading those
+      // just to check would log a spurious "viewed" audit entry every unlock.
+      if (summary.require_reauth || summary.encrypted) continue;
+      try {
+        const detail = await fetchVaultItem(summary.id);
+        if (isEncryptedBlob(detail.data as unknown)) continue;
+        const blob = (await encrypt(detail.data ?? {})) as unknown as Record<string, string>;
+        await updateVaultItem(summary.id, {
+          type: detail.type,
+          title: detail.title,
+          data: blob,
+          folder_id: detail.folder_id,
+          favorite: detail.favorite,
+          require_reauth: detail.require_reauth,
+        });
+        changed = true;
+      } catch {
+        // Best effort — skip anything that fails and try again next unlock.
+      }
+    }
+    if (changed) {
+      await load();
+      onChange?.();
+    }
+  }
+
+  // Kick off migration once the vault is unlocked and the list has loaded.
+  useEffect(() => {
+    if (vaultStatus !== 'unlocked' || migratedRef.current || items.length === 0) return;
+    migratedRef.current = true;
+    migrateLegacyItems();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [vaultStatus, items]);
+
   useEffect(() => {
     load().catch(() => setError('Failed to load your vault.'));
   }, []);
 
   // Populate the item form/detail from the URL.
   useEffect(() => {
+    if (itemForm == null) {
+      openedFormRef.current = null;
+      return;
+    }
+    // Guard against a duplicate load (StrictMode / re-render) for the same form.
+    if (openedFormRef.current === itemForm) return;
+    openedFormRef.current = itemForm;
     setError(null);
     if (itemForm === 'new') {
       setType('login');
@@ -165,6 +232,7 @@ export default function VaultBrowser({ onChange }: Props) {
         ? unlockVaultItem(editingItemId)
         : fetchVaultItem(editingItemId);
       load
+        .then(decryptItem)
         .then((item) => {
           setType(item.type);
           setTitle(item.title);
@@ -182,7 +250,14 @@ export default function VaultBrowser({ onChange }: Props) {
   }, [itemForm]);
 
   useEffect(() => {
-    if (viewId != null) {
+    if (viewId == null) {
+      openedViewRef.current = null;
+      return;
+    }
+    // Guard against a duplicate open (StrictMode / re-render) for the same item.
+    if (openedViewRef.current === viewId) return;
+    openedViewRef.current = viewId;
+    {
       setRevealed({});
       setDetail(null);
       // For a protected item, go straight to the passkey unlock — never fetch
@@ -197,10 +272,13 @@ export default function VaultBrowser({ onChange }: Props) {
         : fetchVaultItem(viewId).then((item) =>
             item.require_reauth ? unlockVaultItem(viewId) : item,
           );
-      load.then(setDetail).catch(() => {
-        setError('Passkey required to open this item.');
-        closeOverlay();
-      });
+      load
+        .then(decryptItem)
+        .then(setDetail)
+        .catch(() => {
+          setError('Passkey required to open this item.');
+          closeOverlay();
+        });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [viewId]);
@@ -282,25 +360,31 @@ export default function VaultBrowser({ onChange }: Props) {
       const value = (fields[spec.key] ?? '').trim();
       if (value) data[spec.key] = value;
     }
-    const payload = {
-      type,
-      title: title.trim(),
-      data,
-      folder_id: itemFolderId,
-      favorite,
-      require_reauth: requireReauth,
-    };
 
     setBusy(true);
     setError(null);
     try {
+      // Zero-knowledge: encrypt the secret payload in the browser before it
+      // leaves. The server stores only the opaque blob.
+      await ensureUnlocked();
+      const encrypted = (await encrypt(data)) as unknown as Record<string, string>;
+
+      const payload = {
+        type,
+        title: title.trim(),
+        data: encrypted,
+        folder_id: itemFolderId,
+        favorite,
+        require_reauth: requireReauth,
+      };
+
       if (editingItemId) await updateVaultItem(editingItemId, payload);
       else await createVaultItem(payload);
       await load();
       onChange?.();
       closeOverlay();
     } catch {
-      setError('Something went wrong.');
+      setError('Unlock the vault to save (passkey required).');
     } finally {
       setBusy(false);
     }
@@ -370,6 +454,41 @@ export default function VaultBrowser({ onChange }: Props) {
 
   return (
     <section className="vault">
+      {vaultStatus !== 'unlocked' && (
+        <div className="lock-banner">
+          <span className="lock-banner-text">
+            <LockIcon size={15} /> Vault locked — secrets are end-to-end encrypted
+          </span>
+          <span className="lock-banner-actions">
+            <button
+              type="button"
+              className="link"
+              disabled={vaultStatus === 'unlocking'}
+              onClick={() => {
+                const key = window.prompt('Enter your recovery key');
+                if (key) {
+                  unlockWithRecovery(key).catch(() =>
+                    setError('Recovery key did not work.'),
+                  );
+                }
+              }}
+            >
+              Use recovery key
+            </button>
+            <button
+              type="button"
+              className="small"
+              disabled={vaultStatus === 'unlocking'}
+              onClick={() =>
+                unlock().catch(() => setError('Could not unlock (passkey/PRF unavailable).'))
+              }
+            >
+              {vaultStatus === 'unlocking' ? 'Unlocking…' : 'Unlock'}
+            </button>
+          </span>
+        </div>
+      )}
+
       {/* Breadcrumb */}
       <nav className="crumbs" aria-label="Breadcrumb">
         <button
@@ -401,19 +520,27 @@ export default function VaultBrowser({ onChange }: Props) {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
-        {!favOnly && (
-          <button
-            className="icon-btn add-folder"
-            onClick={openFolderNew}
-            aria-label="New folder"
-            title="New folder here"
-          >
-            <FolderPlusIcon size={18} />
-          </button>
-        )}
-        <button className="small add-btn" onClick={openItemNew} aria-label="New item" title="New item here">
-          <KeyPlusIcon size={20} />
-        </button>
+        <Menu
+          label="Create"
+          triggerClassName="add-btn"
+          trigger={<PencilIcon size={18} />}
+          items={[
+            {
+              label: 'New item',
+              icon: <KeyPlusIcon size={17} />,
+              onClick: openItemNew,
+            },
+            ...(favOnly
+              ? []
+              : [
+                  {
+                    label: 'New folder',
+                    icon: <FolderPlusIcon size={17} />,
+                    onClick: openFolderNew,
+                  },
+                ]),
+          ]}
+        />
       </div>
 
       {isEmpty ? (
@@ -437,23 +564,24 @@ export default function VaultBrowser({ onChange }: Props) {
                   <span className="crumb-sep">▸</span>
                 </button>
                 <span className="row-actions">
-                  <button
-                    className="icon-btn"
-                    title="Rename / Move"
-                    aria-label="Rename or move folder"
-                    onClick={() => openFolderEdit(folder.id)}
-                  >
-                    <PencilIcon />
-                  </button>
-                  <button
-                    className="icon-btn danger"
-                    title="Delete"
-                    aria-label="Delete folder"
-                    onClick={() => removeFolder(folder)}
-                    disabled={busy}
-                  >
-                    <TrashIcon />
-                  </button>
+                  <Menu
+                    label="Folder actions"
+                    trigger={<MoreIcon size={18} />}
+                    items={[
+                      {
+                        label: 'Edit',
+                        icon: <PencilIcon />,
+                        onClick: () => openFolderEdit(folder.id),
+                      },
+                      {
+                        label: 'Delete',
+                        icon: <TrashIcon />,
+                        danger: true,
+                        disabled: busy,
+                        onClick: () => removeFolder(folder),
+                      },
+                    ]}
+                  />
                 </span>
               </li>
             ))}
@@ -481,23 +609,24 @@ export default function VaultBrowser({ onChange }: Props) {
                 </span>
               </button>
               <span className="row-actions">
-                <button
-                  className="icon-btn"
-                  title="Edit"
-                  aria-label="Edit item"
-                  onClick={() => openItemEdit(item.id)}
-                >
-                  <PencilIcon />
-                </button>
-                <button
-                  className="icon-btn danger"
-                  title="Delete"
-                  aria-label="Delete item"
-                  onClick={() => removeItem(item.id)}
-                  disabled={busy}
-                >
-                  <TrashIcon />
-                </button>
+                <Menu
+                  label="Item actions"
+                  trigger={<MoreIcon size={18} />}
+                  items={[
+                    {
+                      label: 'Edit',
+                      icon: <PencilIcon />,
+                      onClick: () => openItemEdit(item.id),
+                    },
+                    {
+                      label: 'Delete',
+                      icon: <TrashIcon />,
+                      danger: true,
+                      disabled: busy,
+                      onClick: () => removeItem(item.id),
+                    },
+                  ]}
+                />
               </span>
             </li>
           ))}

@@ -1,6 +1,7 @@
 import {
   startAuthentication,
   startRegistration,
+  type PublicKeyCredentialCreationOptionsJSON,
 } from '@simplewebauthn/browser';
 import {
   api,
@@ -23,6 +24,19 @@ export interface RegisterResult {
   recoveryCodes: string[];
 }
 
+/** Enable the WebAuthn PRF extension so the credential can derive the vault key. */
+function withPrf(
+  options: PublicKeyCredentialCreationOptionsJSON,
+): PublicKeyCredentialCreationOptionsJSON {
+  return {
+    ...options,
+    extensions: {
+      ...options.extensions,
+      prf: {},
+    } as unknown as PublicKeyCredentialCreationOptionsJSON['extensions'],
+  };
+}
+
 export async function registerPasskey(
   name: string,
   email: string,
@@ -31,7 +45,7 @@ export async function registerPasskey(
 
   const { data: options } = await api.post('/auth/register/options', { name, email });
 
-  const attestation = await startRegistration({ optionsJSON: options });
+  const attestation = await startRegistration({ optionsJSON: withPrf(options) });
 
   const { data } = await api.post('/auth/register/verify', attestation);
 
@@ -41,17 +55,20 @@ export async function registerPasskey(
 /**
  * Register an additional passkey for the already-authenticated user (a second
  * device, e.g. phone / laptop / security key). `alias` is a friendly name.
+ * Returns the new credential id so the caller can enrol it for encryption.
  */
-export async function addPasskey(alias: string): Promise<Passkey[]> {
+export async function addPasskey(
+  alias: string,
+): Promise<{ credentialId: string; passkeys: Passkey[] }> {
   await ensureCsrf();
 
   const { data: options } = await api.post('/passkeys/options', {});
 
-  const attestation = await startRegistration({ optionsJSON: options });
+  const attestation = await startRegistration({ optionsJSON: withPrf(options) });
 
   const { data } = await api.post('/passkeys/verify', { ...attestation, alias });
 
-  return data.passkeys;
+  return { credentialId: attestation.id, passkeys: data.passkeys };
 }
 
 /**

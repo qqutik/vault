@@ -7,6 +7,7 @@ import VaultBrowser from './features/vault/VaultBrowser';
 import PasskeyManager from './features/passkeys/PasskeyManager';
 import SessionManager from './features/sessions/SessionManager';
 import { LogoutIcon } from './components/icons';
+import { useVaultKey } from './features/encryption/vaultKey';
 import './App.css';
 
 type Tab = 'vault' | 'passkeys';
@@ -30,6 +31,7 @@ export default function App() {
 
   const location = useLocation();
   const navigate = useNavigate();
+  const { lock } = useVaultKey();
   const tab: Tab = location.pathname.startsWith('/passkeys') ? 'passkeys' : 'vault';
   const favActive =
     tab === 'vault' && new URLSearchParams(location.search).get('fav') === '1';
@@ -83,6 +85,7 @@ export default function App() {
   }
 
   async function handleLogout() {
+    lock();
     await logout();
     setDashboard(null);
     setRecoveryCodes(null);
@@ -157,12 +160,11 @@ export default function App() {
           <>
             <PasskeyManager onChange={refresh} />
             <SessionManager />
+            <ActivityLog userId={dashboard.user.id} />
           </>
         ) : (
           <VaultBrowser onChange={refresh} />
         )}
-
-        <ActivityLog userId={dashboard.user.id} />
       </main>
     );
   }

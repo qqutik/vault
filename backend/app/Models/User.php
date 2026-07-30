@@ -16,8 +16,14 @@ use Laragear\WebAuthn\Contracts\WebAuthnAuthenticatable;
 use Laragear\WebAuthn\WebAuthnAuthentication;
 use Laravel\Sanctum\HasApiTokens;
 
+/**
+ * @property string|null $prf_salt Per-user PRF salt (base64) for ZK key derivation.
+ * @property string|null $recovery_wrapped_vmk VMK wrapped under the recovery key.
+ * @property string|null $recovery_wrap_iv AES-GCM IV for the recovery wrap.
+ * @property string|null $recovery_salt HKDF salt for the recovery key.
+ */
 #[Fillable(['name', 'email'])]
-#[Hidden(['remember_token'])]
+#[Hidden(['remember_token', 'prf_salt', 'recovery_wrapped_vmk', 'recovery_wrap_iv', 'recovery_salt'])]
 class User extends Authenticatable implements WebAuthnAuthenticatable
 {
     /** @use HasFactory<UserFactory> */

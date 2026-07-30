@@ -16,6 +16,25 @@ function base(size: number) {
   };
 }
 
+export function PlusIcon({ size = 16 }: IconProps) {
+  return (
+    <svg {...base(size)}>
+      <path d="M12 5v14" />
+      <path d="M5 12h14" />
+    </svg>
+  );
+}
+
+export function MoreIcon({ size = 16 }: IconProps) {
+  return (
+    <svg {...base(size)} strokeWidth={2.5}>
+      <circle cx="12" cy="5" r="1" />
+      <circle cx="12" cy="12" r="1" />
+      <circle cx="12" cy="19" r="1" />
+    </svg>
+  );
+}
+
 export function PencilIcon({ size = 16 }: IconProps) {
   return (
     <svg {...base(size)}>

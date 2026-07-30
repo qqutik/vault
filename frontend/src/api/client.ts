@@ -102,6 +102,7 @@ export interface VaultItemSummary {
   title: string;
   favorite: boolean;
   require_reauth: boolean;
+  encrypted: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -189,6 +190,70 @@ export async function fetchBreachCount(prefix: string, suffix: string): Promise<
   await ensureCsrf();
   const { data } = await api.post<{ count: number }>('/pwned-passwords/check', { prefix, suffix });
   return data.count;
+}
+
+export interface EncryptionBootstrap {
+  prf_salt: string;
+  initialized: boolean;
+  recovery_available: boolean;
+}
+
+export interface RecoveryMaterial {
+  wrapped_vmk: string;
+  wrap_iv: string;
+  salt: string;
+}
+
+export interface WrappedKey {
+  credential_id: string;
+  wrapped_vmk: string;
+  wrap_iv: string;
+  scheme: string;
+}
+
+/** Ensure a PRF salt exists and learn whether ZK is already set up. */
+export async function encryptionBootstrap(): Promise<EncryptionBootstrap> {
+  await ensureCsrf();
+  const { data } = await api.post<EncryptionBootstrap>('/encryption/bootstrap');
+  return data;
+}
+
+/** The wrapped VMK for one of the user's passkeys, or null when not enrolled. */
+export async function fetchWrappedKey(credentialId: string): Promise<WrappedKey | null> {
+  const { data } = await api.get<WrappedKey | null>('/encryption/wrapped-key', {
+    params: { credential_id: credentialId },
+  });
+  return data;
+}
+
+/** Store the wrapped VMK for one of the user's passkeys (init or add-device). */
+export async function storeWrappedKey(payload: {
+  credential_id: string;
+  wrapped_vmk: string;
+  wrap_iv: string;
+  scheme?: string;
+}): Promise<WrappedKey> {
+  await ensureCsrf();
+  const { data } = await api.post<WrappedKey>('/encryption/wrapped-key', payload);
+  return data;
+}
+
+/** Credential ids of the user's passkeys that are enrolled for encryption. */
+export async function fetchEnrolledCredentials(): Promise<string[]> {
+  const { data } = await api.get<string[]>('/encryption/enrolled');
+  return data;
+}
+
+/** Recovery-wrapped VMK material (null when recovery isn't set up). */
+export async function fetchRecoveryMaterial(): Promise<RecoveryMaterial | null> {
+  const { data } = await api.get<RecoveryMaterial | null>('/encryption/recovery');
+  return data;
+}
+
+/** Store the recovery-wrapped VMK. */
+export async function storeRecovery(payload: RecoveryMaterial): Promise<void> {
+  await ensureCsrf();
+  await api.post('/encryption/recovery', payload);
 }
 
 export interface SessionInfo {
