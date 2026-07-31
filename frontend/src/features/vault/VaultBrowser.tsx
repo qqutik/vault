@@ -480,6 +480,7 @@ export default function VaultBrowser({ onChange }: Props) {
 
   return (
     <section className="vault">
+      <div className="vault-sticky">
       {vaultStatus !== 'unlocked' && (
         <div className="lock-banner">
           <span className="lock-banner-text">
@@ -577,7 +578,9 @@ export default function VaultBrowser({ onChange }: Props) {
           ]}
         />
       </div>
+      </div>
 
+      <div className="vault-list">
       {isEmpty ? (
         <p className="muted">
           {term
@@ -673,6 +676,7 @@ export default function VaultBrowser({ onChange }: Props) {
           ))}
         </ul>
       )}
+      </div>
       {viewId == null && itemForm == null && folderForm == null && error && (
         <p className="error">{error}</p>
       )}

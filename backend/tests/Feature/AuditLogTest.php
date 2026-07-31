@@ -106,9 +106,9 @@ it('returns only the current user recent activity', function () {
         ->assertJsonFragment(['action' => 'login.success']);
 });
 
-it('paginates recent activity 5 per page', function () {
+it('paginates recent activity 10 per page', function () {
     $user = User::factory()->create();
-    foreach (range(1, 7) as $i) {
+    foreach (range(1, 13) as $i) {
         AuditLog::create(['user_id' => $user->id, 'action' => 'item.viewed']);
     }
 
@@ -116,11 +116,11 @@ it('paginates recent activity 5 per page', function () {
 
     $this->getJson('/api/audit-logs')
         ->assertOk()
-        ->assertJsonCount(5, 'data')
-        ->assertJsonPath('meta.total', 7)
+        ->assertJsonCount(10, 'data')
+        ->assertJsonPath('meta.total', 13)
         ->assertJsonPath('meta.last_page', 2);
 
     $this->getJson('/api/audit-logs?page=2')
         ->assertOk()
-        ->assertJsonCount(2, 'data');
+        ->assertJsonCount(3, 'data');
 });

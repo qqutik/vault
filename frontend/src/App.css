@@ -16,6 +16,54 @@ body {
   color: #e7e9ee;
 }
 
+.card-app {
+  /* Fixed height so the panel never jumps between views; the header and dials
+     stay put and only the body below scrolls. */
+  height: min(720px, calc(100vh - 5rem));
+  display: flex;
+  flex-direction: column;
+}
+
+.card-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* The single active view fills the body; its own scroll region handles overflow. */
+.card-body > * {
+  flex: 1;
+  min-height: 0;
+}
+
+/* Whole-view scroll (Health, Devices, Activity, Settings). Right padding keeps
+   content clear of the scrollbar; negative margin pulls it toward the edge. */
+.scroll-view {
+  overflow-y: auto;
+  padding-top: 1.1rem;
+  margin-right: -1rem;
+  padding-right: 1rem;
+}
+
+/* Vault: header (banner + breadcrumb + search) stays put; only the list scrolls. */
+.vault {
+  display: flex;
+  flex-direction: column;
+}
+
+.vault-sticky {
+  flex: none;
+}
+
+.vault-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  margin-right: -1rem;
+  padding-right: 1rem;
+}
+
 .card {
   width: min(420px, 92vw);
   background: #171a21;
@@ -169,6 +217,16 @@ button.secondary {
   grid-template-columns: repeat(4, 1fr);
   gap: 0.6rem;
   margin-top: 1.25rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid #262b36;
+}
+
+/* The dials provide the divider now, so the first section in a view drops its own. */
+.card-body > *:first-child,
+.scroll-view > *:first-child {
+  margin-top: 0;
+  border-top: none;
+  padding-top: 0;
 }
 
 .row-actions {

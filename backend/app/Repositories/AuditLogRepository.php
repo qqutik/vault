@@ -11,7 +11,7 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 class AuditLogRepository
 {
     /** Default page size for the activity feed. */
-    public const PER_PAGE = 5;
+    public const PER_PAGE = 10;
 
     /**
      * Paginate a user's most recent audit entries.

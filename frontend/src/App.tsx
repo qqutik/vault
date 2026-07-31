@@ -124,7 +124,7 @@ export default function App() {
     const refresh = () => fetchDashboard().then(setDashboard);
 
     return (
-      <main className="card">
+      <main className="card card-app">
         <header className="dash-header">
           <div>
             <h1>🔐 Vault</h1>
@@ -197,17 +197,27 @@ export default function App() {
           />
         </div>
 
-        {tab === 'devices' ? (
-          <DevicesView onChange={refresh} />
-        ) : tab === 'health' ? (
-          <PasswordHealth health={health} />
-        ) : tab === 'activity' ? (
-          <ActivityLog userId={dashboard.user.id} />
-        ) : tab === 'settings' ? (
-          <SettingsView />
-        ) : (
-          <VaultBrowser onChange={refresh} />
-        )}
+        <div className="card-body">
+          {tab === 'devices' ? (
+            <div className="scroll-view">
+              <DevicesView onChange={refresh} />
+            </div>
+          ) : tab === 'health' ? (
+            <div className="scroll-view">
+              <PasswordHealth health={health} />
+            </div>
+          ) : tab === 'activity' ? (
+            <div className="scroll-view">
+              <ActivityLog userId={dashboard.user.id} />
+            </div>
+          ) : tab === 'settings' ? (
+            <div className="scroll-view">
+              <SettingsView />
+            </div>
+          ) : (
+            <VaultBrowser onChange={refresh} />
+          )}
+        </div>
       </main>
     );
   }
